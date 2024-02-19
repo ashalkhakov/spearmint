@@ -625,7 +625,7 @@ static void FillCloudBox( const shader_t *shader, int stage )
 */
 void R_BuildCloudData( shaderCommands_t *input )
 {
-	//int			i;
+	int			i;
 	shader_t	*shader;
 
 	shader = input->shader;
@@ -645,7 +645,7 @@ void R_BuildCloudData( shaderCommands_t *input )
 		// ok, this is really wierd. it's iterating through shader stages here,
 		// which is unnecessary for a multi-stage sky shader, as far as i can tell
 		// nuking this
-#if 0
+#if 1
 		for ( i = 0; i < MAX_SHADER_STAGES; i++ )
 		{
 			if ( !tess.xstages[i] ) {
