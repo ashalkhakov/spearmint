@@ -2,6 +2,12 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.12)
 
 PROJECT(spearmint)
 
+# FIXME: AS: this is a hack. steamdeck needs this to be bundled but it doesn't work!
+set(USE_INTERNAL_JPEG ON)
+set(USE_SDL ON)
+set(COPYDIR "/home/deck/Games/gog/quake-iii-arena")
+# end of hack
+
 #
 # Spearmint Makefile
 #
@@ -2155,7 +2161,7 @@ foreach(shader ${Q3R2STRINGSRC})
     get_filename_component(outshader "${shader}" NAME)
     add_custom_command(OUTPUT "${outshader}.c"
         DEPENDS stringify "${shader}.glsl"
-        COMMAND stringify "../${shader}.glsl" "${outshader}.c")
+        COMMAND stringify "${CMAKE_CURRENT_SOURCE_DIR}/${shader}.glsl" "${outshader}.c")
 
     list(APPEND Q3R2STRINGC "${outshader}.c")
 endforeach()
