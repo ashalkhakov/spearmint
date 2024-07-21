@@ -741,6 +741,10 @@ qboolean MapEntityWrite( const mapEntity_t *e, fileHandle_t fp, int entityNum ) 
 			case PRIMTYPE_PATCH:
                 MapPatchWrite( mapPrim, fp, i, origin );
                 break;
+            case PRIMTYPE_MESH:
+                // not in the source format
+                // TODO: add?
+                break;
 			case PRIMTYPE_INVALID:
 				break;
 		}
@@ -771,6 +775,9 @@ void RemoveMapEntityPrimitiveData( mapEntity_t *e ) {
                 break;
             case PRIMTYPE_PATCH:
 				FreeMapPatch( p );
+                break;
+            case PRIMTYPE_MESH:
+                FreeMapMesh( p );
                 break;
 			case PRIMTYPE_INVALID:
 				break;
@@ -804,6 +811,10 @@ unsigned int GetMapEntityGeometryCRC( const mapEntity_t *e ) {
 			case PRIMTYPE_PATCH:
 				crc ^= GetMapPatchGeometryCRC( mapPrim );
 				break;
+            case PRIMTYPE_MESH:
+                // not in the source format
+                // TODO: add?
+                break;
 			case PRIMTYPE_INVALID:
 				break;
 		}
@@ -894,10 +905,11 @@ qboolean ParseMapFileFromSource( mapFile_t *m, source_t *src ) {
                             }
 							break;
                         }
-						case PRIMTYPE_PATCH: {
+						case PRIMTYPE_PATCH:
+                        case PRIMTYPE_MESH:
                             Q_strncpyz( mapPrimitive->material, material, sizeof( mapPrimitive->material ) );
 							break;
-						}
+
 						case PRIMTYPE_INVALID:
 							break;
 					}

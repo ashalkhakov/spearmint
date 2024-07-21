@@ -665,6 +665,43 @@ static mapPrimitive_t *MapPatchInitFromBspPatch( const bspFile_t *bsp, dsurface_
     return out;
 }
 
+static mapPrimitive_t *MapMeshInitFromBspTerrain( const bspFile_t *bsp, dsurface_t *in ) {
+    mapPrimitive_t *out;
+    dshader_t *shader;
+    drawVert_t *dv;
+    surfVert_t *outVert;
+    int *indexes;
+    int j;
+
+    assert( in->surfaceType == MST_TERRAIN );
+
+    out = ( mapPrimitive_t * )ii.GetMemory( sizeof( *out ) );
+    MapMeshInit( out );
+
+    SurfaceResizeIndexes( &out->surf, in->numIndexes );
+    dv = bsp->drawVerts + in->firstVert;
+    outVert = out->surf.verts;
+    for ( j = 0 ; j < in->numVerts ; j++, dv++, outVert++ ) {
+        VectorCopy( dv->xyz, outVert->xyz );
+        VectorCopy( dv->normal, outVert->normal );
+    }
+
+    indexes = bsp->drawIndexes + in->firstIndex;
+    SurfaceResizeVerts( &out->surf, in->numVerts );
+    for ( j = 0; j < in->numIndexes ; j++ ) {
+        out->surf.indexes[j] = indexes[j];
+
+        if ( indexes[j] < 0 || indexes[j] >= in->numVerts ) {
+            Com_Error(ERR_DROP, "MapMeshInitFromBspTerrain: Bad index in trisoup surface");
+        }
+    }
+
+    shader = &bsp->shaders[in->shaderNum];
+    Q_strncpyz( out->material, shader->shader, sizeof( out->material ) );
+
+    return out;
+}
+
 void TransferSubModelToMapEntity( const bspFile_t *bsp, dmodel_t *model, mapEntity_t *entity, int modelindex ) {
     int i, j;
     dbrush_t *brush;
@@ -692,16 +729,18 @@ void TransferSubModelToMapEntity( const bspFile_t *bsp, dmodel_t *model, mapEnti
 
     for ( i = model->numSurfaces - 1; i >= model->firstSurface; i-- ) {
         dsurface_t *surf = &bsp->surfaces[i];
-        if ( surf->surfaceType != MST_PATCH ) {
-            continue;
+        if ( surf->surfaceType == MST_PATCH ) {
+            outPatch = MapPatchInitFromBspPatch( bsp, surf );
+
+            AddPrimitiveToMapEntity( entity, outPatch );
+        } else if ( surf->surfaceType == MST_TERRAIN ) {
+            outPatch = MapMeshInitFromBspTerrain( bsp, surf );
+
+            AddPrimitiveToMapEntity( entity, outPatch );
         }
 
-        outPatch = MapPatchInitFromBspPatch( bsp, surf );
-
-        AddPrimitiveToMapEntity( entity, outPatch );
+        // TODO: transfer triangle soups as render models
     }
-
-    // TODO: transfer terrains & triangle soups as render models
 }
 
 /*

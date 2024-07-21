@@ -89,6 +89,9 @@ qboolean				SurfaceRayIntersection( const surface_t *self, const vec3_t start, c
 void					SurfaceGenerateEdgeIndexes( surface_t *self );
 int						SurfaceFindEdge( const surface_t *self, int v1, int v2 );
 
+void                    SurfaceResizeVerts( surface_t *self, int sizeVerts );
+void                    SurfaceResizeIndexes( surface_t *self, int sizeIndexes );
+
 /*
 ====================
 SurfaceInit

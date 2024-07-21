@@ -120,6 +120,41 @@ static ID_INLINE int VertexListAppend( surface_t *self, surfVert_t *obj ) {
 
 /*
 =================
+SurfaceResizeVerts
+=================
+*/
+void SurfaceResizeVerts( surface_t *self, int sizeVerts ) {
+    VertexListResize( self, sizeVerts, 16 );
+}
+
+/*
+=================
+SurfaceResizeIndexes
+=================
+*/
+void SurfaceResizeIndexes( surface_t *self, int sizeIndexes ) {
+	int *temp = self->indexes;
+    int i;
+
+	self->sizeIndexes = sizeIndexes;
+	if ( self->sizeIndexes < self->numIndexes ) {
+		self->numIndexes = self->sizeIndexes;
+	}
+
+	// copy the old list into our new one
+	self->indexes = ii.GetMemory( sizeof(temp[0]) * self->sizeIndexes );
+	for (i = 0; i < self->numIndexes; i++) {
+		self->indexes[i] = temp[i];
+	}
+
+	// delete the old list if it exists
+	if ( temp ) {
+		ii.FreeMemory(temp);
+	}    
+}
+
+/*
+=================
 UpdateVertexIndex
 =================
 */

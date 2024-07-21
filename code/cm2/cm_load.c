@@ -2732,6 +2732,48 @@ void CreatePatchPolygons( cm_model_t *model, surfacePatch_t *mesh, const qhandle
 
 /*
 =================
+CreateMeshPolygons
+=================
+*/
+void CreateMeshPolygons( cm_model_t *model, surface_t *mesh, const qhandle_t material, int primitiveNum ) {
+	int i, j;
+	int v1, v2, v3;
+    surfVert_t *sv1, *sv2, *sv3;
+	fixedWinding_t w;
+	plane_t plane;
+	vec3_t d1, d2;
+    vec5_t tmp;
+
+    tmp[3] = tmp[4] = 0.0f;
+
+    for ( i = 0; i < mesh->numIndexes; i += 3 ) {
+        v1 = i * 3 + 0;
+        sv1 = SurfaceGetVertex( mesh, v1 );
+        v2 = i * 3 + 1;
+        sv2 = SurfaceGetVertex( mesh, v2 );
+        v3 = i * 3 + 2;
+        sv3 = SurfaceGetVertex( mesh, v3 );
+
+        VectorSubtract( sv2->xyz, sv1->xyz, d1 );
+        VectorSubtract( sv3->xyz, sv1->xyz, d2 );
+        CrossProduct( d1, d2, plane );
+        VectorNormalize( plane );
+        PlaneFitThroughPoint( plane, sv1->xyz );
+
+        ClearFixedWinding( &w );
+        VectorCopy( sv1->xyz, tmp );
+        AddPointToFixedWinding( &w, tmp );
+        VectorCopy( sv2->xyz, tmp );
+        AddPointToFixedWinding( &w, tmp );
+        VectorCopy( sv3->xyz, tmp );
+        AddPointToFixedWinding( &w, tmp );
+
+        PolygonFromWinding( model, &w, plane, material, -primitiveNum );
+    }
+}
+
+/*
+=================
 CM_EstimateVertsAndEdges
 =================
 */
@@ -2755,6 +2797,10 @@ static void CM_EstimateVertsAndEdges( const mapEntity_t *mapEnt, int *numVerts, 
 			*numVerts += (GetNumSides( mapPrim ) - 2) * 2;
 			*numEdges += (GetNumSides( mapPrim ) - 2) * 3;
 		}
+        if ( mapPrim->type == PRIMTYPE_MESH ) {
+            *numVerts += mapPrim->surf.numVerts;
+            *numEdges += mapPrim->surf.numEdges;
+        }
 		j++;
 		mapPrim = mapPrim->next;
 	}
@@ -2907,6 +2953,32 @@ void ConvertBrush( cm_model_t *model, const mapPrimitive_t *mapBrush, int primit
 	}
 	AddBrushToNode( model, model->node, brush );
 	ii.FreeMemory( planes );
+}
+
+/*
+=================
+ConvertMesh
+=================
+*/
+void ConvertMesh( cm_model_t *model, const mapPrimitive_t *mesh, int primitiveNum ) {
+	qhandle_t material;
+	surface_t *cp;
+
+	material = CM_FindMaterial( mesh->material );
+    // TODO: implement this?
+	/*if ( !( material->GetContentFlags() & CONTENTS_REMOVE_UTIL ) ) {
+		return;
+	}*/
+
+	// copy the mesh
+    cp = ( surface_t * )ii.GetMemory( sizeof( *cp ) );
+    SurfaceInitFromSurface( cp, &mesh->surf );
+
+	// create collision polygons for the mesh
+	CreateMeshPolygons( model, cp, material, primitiveNum );
+
+	SurfaceFree( cp );
+    ii.FreeMemory( cp );
 }
 
 /*
@@ -3339,6 +3411,9 @@ cm_model_t *CM_CollisionModelForMapEntity( const mapEntity_t *mapEnt ) {
 		if ( mapPrim->type == PRIMTYPE_BRUSH ) {
 			ConvertBrushSides( model, mapPrim, i );
 		}
+        if ( mapPrim->type == PRIMTYPE_MESH ) {
+            ConvertMesh( model, mapPrim, i );
+        }
 	}
 
 	FinishModel( model );

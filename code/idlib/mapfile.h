@@ -60,7 +60,8 @@ If you have questions concerning this license or the applicable additional terms
 typedef enum {
     PRIMTYPE_INVALID = -1,
     PRIMTYPE_BRUSH,
-    PRIMTYPE_PATCH
+    PRIMTYPE_PATCH,
+    PRIMTYPE_MESH
 } mapPrimitiveType_t;
 
 typedef struct mapBrushSide_s {
@@ -79,16 +80,20 @@ typedef struct mapPrimitive_s {
 
     struct mapPrimitive_s * next;
 
+	char					material[MAX_QPATH];
+
     // brushes
 	int						numSides;
 	mapBrushSide_t *        sides;
     
     // patches
-	char					material[MAX_QPATH];
     surfacePatch_t          patch;
 	int						horzSubdivisions;
 	int						vertSubdivisions;
 	qboolean				explicitSubdivisions;
+
+    // mesh
+    surface_t               surf;
 } mapPrimitive_t;
 
 static ID_INLINE void MapBrushSideClear( mapBrushSide_t *bs ) {
@@ -152,6 +157,22 @@ static ID_INLINE void FreeMapPatch( mapPrimitive_t *p ) {
     p->next = NULL;
 }
 
+static ID_INLINE void MapMeshInit( mapPrimitive_t *p ) {
+    DictInit( &p->epairs );
+    p->type = PRIMTYPE_MESH;
+    p->material[0] = 0;
+    p->next = NULL;
+    SurfaceInit( &p->surf );
+}
+
+static ID_INLINE void FreeMapMesh( mapPrimitive_t *p ) {
+    DictFree( &p->epairs );
+
+    SurfaceFree( &p->surf );
+
+    p->next = NULL;
+}
+
 static ID_INLINE void MapPrimitiveFree( mapPrimitive_t *p ) {
 	switch ( p->type ) {
 		case PRIMTYPE_BRUSH:
@@ -160,6 +181,9 @@ static ID_INLINE void MapPrimitiveFree( mapPrimitive_t *p ) {
 		case PRIMTYPE_PATCH:
 			FreeMapPatch( p );
 			break;
+        case PRIMTYPE_MESH:
+            FreeMapMesh( p );
+            break;
 		case PRIMTYPE_INVALID:
 			break;
 	}
