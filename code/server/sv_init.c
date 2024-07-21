@@ -435,6 +435,11 @@ static void SV_ClearServer(void) {
 	DA_Free( &svs.snapshotEntities );
 	DA_Free( &sv.svEntitiesBaseline );
 
+    if ( sv.clipInitialized ) {
+        ClipFree( &sv.clip );
+        sv.clipInitialized = qfalse;
+    }
+
 	Com_Memset (&sv, 0, sizeof(sv));
 }
 
@@ -516,7 +521,7 @@ void SV_SpawnServer( char *server, qboolean killBots ) {
 #endif
 
 	// clear collision map data
-	CM_ClearMap();
+	cme.FreeMap();
 
 	// init client structures and svs.numSnapshotEntities 
 	if ( !Cvar_VariableValue("sv_running") ) {
@@ -558,7 +563,9 @@ void SV_SpawnServer( char *server, qboolean killBots ) {
 	// restart the file system
 	FS_Restart(qfalse);
 
-	CM_LoadMap( va("maps/%s.bsp", server), qfalse, &checksum );
+	cme.LoadBSP( va("maps/%s.bsp", server), &checksum );
+    ClipInit( &sv.clip );
+    sv.clipInitialized = qtrue;
 
 	// set serverinfo visible name
 	Cvar_Set( "mapname", server );

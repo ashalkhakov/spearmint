@@ -30,7 +30,7 @@ Suite 120, Rockville, Maryland 20850 USA.
 #ifndef __ASM_I386__
 #define __ASM_I386__
 
-#include "../qcommon/q_platform.h"
+#include "../idlib/q_platform.h"
 
 #ifdef __ELF__
 .section .note.GNU-stack,"",@progbits

@@ -29,7 +29,7 @@ Suite 120, Rockville, Maryland 20850 USA.
 */
 
 #include "qasm-inline.h"
-#include "../qcommon/q_shared.h"
+#include "../idlib/q_shared.h"
 
 #if defined (__i386__) || defined(__x86_64__)
 

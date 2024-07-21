@@ -31,8 +31,8 @@ Suite 120, Rockville, Maryland 20850 USA.
 
 #include "server.h"
 
-#include "../botlib/l_script.h"
-#include "../botlib/l_precomp.h"
+#include "../idlib/l_script.h"
+#include "../idlib/l_precomp.h"
 
 define_t	*game_globaldefines;
 
@@ -130,13 +130,21 @@ gets mins and maxs for inline bmodels
 */
 void SV_GetBrushBounds( int modelindex, vec3_t mins, vec3_t maxs ) {
 	clipHandle_t	h;
+	char			modelName[MAX_QPATH];
+	vec3_t			bounds[2];
 
 	if (!mins || !maxs) {
 		Com_Error( ERR_DROP, "SV_GetBrushBounds: NULL" );
 	}
 
-	h = CM_InlineModel( modelindex );
-	CM_ModelBounds( h, mins, maxs );
+	snprintf( modelName, sizeof(modelName), "*%d", modelindex );
+
+	h = cme.LoadModel( modelName, qfalse );
+	if ( !cme.GetModelBounds( h, bounds ) ) {
+		Com_Error( ERR_DROP, "SV_GetBrushBounds: unable to get bounds for modelindex %d", modelindex );
+	}
+	VectorCopy( bounds[0], mins );
+	VectorCopy( bounds[1], maxs );
 }
 
 
@@ -155,17 +163,17 @@ qboolean SV_inPVS (const vec3_t p1, const vec3_t p2)
 	int		area1, area2;
 	byte	*mask;
 
-	leafnum = CM_PointLeafnum (p1);
-	cluster = CM_LeafCluster (leafnum);
-	area1 = CM_LeafArea (leafnum);
-	mask = CM_ClusterPVS (cluster);
+	leafnum = cme.PointLeafnum (p1);
+	cluster = cme.LeafCluster (leafnum);
+	area1 = cme.LeafArea (leafnum);
+	mask = cme.ClusterPVS (cluster);
 
-	leafnum = CM_PointLeafnum (p2);
-	cluster = CM_LeafCluster (leafnum);
-	area2 = CM_LeafArea (leafnum);
+	leafnum = cme.PointLeafnum (p2);
+	cluster = cme.LeafCluster (leafnum);
+	area2 = cme.LeafArea (leafnum);
 	if ( mask && (!(mask[cluster>>3] & (1<<(cluster&7)) ) ) )
 		return qfalse;
-	if (!CM_AreasConnected (area1, area2))
+	if (!cme.AreasConnected (area1, area2))
 		return qfalse;		// a door blocks sight
 	return qtrue;
 }
@@ -184,12 +192,12 @@ qboolean SV_inPVSIgnorePortals( const vec3_t p1, const vec3_t p2)
 	int		cluster;
 	byte	*mask;
 
-	leafnum = CM_PointLeafnum (p1);
-	cluster = CM_LeafCluster (leafnum);
-	mask = CM_ClusterPVS (cluster);
+	leafnum = cme.PointLeafnum (p1);
+	cluster = cme.LeafCluster (leafnum);
+	mask = cme.ClusterPVS (cluster);
 
-	leafnum = CM_PointLeafnum (p2);
-	cluster = CM_LeafCluster (leafnum);
+	leafnum = cme.PointLeafnum (p2);
+	cluster = cme.LeafCluster (leafnum);
 
 	if ( mask && (!(mask[cluster>>3] & (1<<(cluster&7)) ) ) )
 		return qfalse;
@@ -210,7 +218,7 @@ void SV_AdjustAreaPortalState( sharedEntity_t *ent, qboolean open ) {
 	if ( svEnt->areanum2 == -1 ) {
 		return;
 	}
-	CM_AdjustAreaPortalState( svEnt->areanum, svEnt->areanum2, open );
+	cme.AdjustAreaPortalState( svEnt->areanum, svEnt->areanum2, open );
 }
 
 
@@ -505,7 +513,7 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 		SV_AdjustAreaPortalState( VMA(1), args[2] );
 		return 0;
 	case G_AREAS_CONNECTED:
-		return CM_AreasConnected( args[1], args[2] );
+		return cme.AreasConnected( args[1], args[2] );
 
 	case G_BOT_ALLOCATE_CLIENT:
 		return SV_BotAllocateClient();
@@ -517,7 +525,7 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 		SV_GetUsercmd( args[1], VMA(2) );
 		return 0;
 	case G_GET_ENTITY_TOKEN:
-		return CM_GetEntityToken( VMA(1), VMA(2), args[3] );
+		return cme.GetEntityToken( VMA(1), VMA(2), args[3] );
 
 	case G_DEBUG_POLYGON_CREATE:
 		return BotImport_DebugPolygonCreate( args[1], args[2], VMA(3) );
@@ -628,7 +636,7 @@ static void SV_InitGameVM( qboolean restart ) {
 	}
 
 	// start the entity parsing at the beginning
-	sv.entityParsePoint = CM_EntityString();
+	sv.entityParsePoint = cme.EntityString();
 
 	// clear all gentity pointers that might still be set from
 	// a previous level

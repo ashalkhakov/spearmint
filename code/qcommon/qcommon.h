@@ -31,7 +31,8 @@ Suite 120, Rockville, Maryland 20850 USA.
 #ifndef _QCOMMON_H_
 #define _QCOMMON_H_
 
-#include "../qcommon/cm_public.h"
+#include "../idlib/q_shared.h"
+#include "../cm2/cm_public.h"
 #include "../renderercommon/tr_public.h"
 
 // Engine name
@@ -961,8 +962,6 @@ void		Com_GameRestart(qboolean disconnect);
 void		Com_ExecuteCfg(void);
 
 int			Com_Milliseconds( void );	// will be journaled properly
-unsigned	Com_BlockChecksum( const void *buffer, int length );
-char		*Com_MD5File(const char *filename, int length, const char *prefix, int prefix_len);
 int			Com_Filter(char *filter, char *name, int casesensitive);
 int			Com_FilterPath(char *filter, char *name, int casesensitive);
 int			Com_RealTime(qtime_t *qtime);
@@ -1125,6 +1124,9 @@ void Com_TouchMemory( void );
 void Z_VM_InitHeap( int tag, void *preallocated, int size );
 int Z_VM_HeapAvailable( int tag );
 void Z_VM_ShutdownHeap( int tag );
+
+// Collision Model API
+extern cmexport_t cme;
 
 // commandLine should not include the executable name (argv[0])
 void Com_Init( char *commandLine );
@@ -1410,5 +1412,21 @@ extern huffman_t clientHuffTables;
 #define DLF_NO_REDIRECT 2
 #define DLF_NO_UDP 4
 #define DLF_NO_DISCONNECT 8
+
+void		CM_BoxTrace ( trace_t *results, const vec3_t start, const vec3_t end,
+						  const vec3_t mins, const vec3_t maxs,
+						  clipHandle_t model, int brushmask, traceType_t type );
+void		CM_TransformedBoxTrace( trace_t *results, const vec3_t start, const vec3_t end,
+						  const vec3_t mins, const vec3_t maxs,
+						  clipHandle_t model, int brushmask,
+						  const vec3_t origin, const vec3_t angles, traceType_t type );
+void		CM_BiSphereTrace( trace_t *results, const vec3_t start,
+							const vec3_t end, float startRad, float endRad,
+							clipHandle_t model, int mask );
+void		CM_TransformedBiSphereTrace( trace_t *results, const vec3_t start,
+							const vec3_t end, float startRad, float endRad,
+							clipHandle_t model, int mask,
+							const vec3_t origin );
+
 
 #endif // _QCOMMON_H_

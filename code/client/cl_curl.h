@@ -32,7 +32,7 @@ Suite 120, Rockville, Maryland 20850 USA.
 #ifndef __QCURL_H__
 #define __QCURL_H__
 
-#include "../qcommon/q_shared.h"
+#include "../idlib/q_shared.h"
 #include "../qcommon/qcommon.h"
 
 #ifdef USE_LOCAL_HEADERS

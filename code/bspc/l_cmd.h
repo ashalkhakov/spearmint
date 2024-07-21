@@ -50,7 +50,7 @@ Suite 120, Rockville, Maryland 20850 USA.
 #include <stdarg.h>
 #include <stdint.h>
 
-#include "../qcommon/q_shared.h"
+#include "../idlib/q_shared.h"
 
 #define false qfalse
 #define true qtrue

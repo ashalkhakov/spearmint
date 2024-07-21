@@ -32,8 +32,8 @@ Suite 120, Rockville, Maryland 20850 USA.
 #ifndef TR_LOCAL_H
 #define TR_LOCAL_H
 
-#include "../qcommon/q_shared.h"
-#include "../qcommon/qfiles.h"
+#include "../idlib/q_shared.h"
+#include "../idlib/qfiles.h"
 #include "../qcommon/qcommon.h"
 #include "../renderercommon/tr_public.h"
 #include "../renderercommon/tr_common.h"
@@ -54,6 +54,8 @@ QGL_ARB_occlusion_query_PROCS;
 QGL_ARB_framebuffer_object_PROCS;
 QGL_ARB_vertex_array_object_PROCS;
 QGL_EXT_direct_state_access_PROCS;
+QGL_DESKTOP_1_1_FIXED_FUNCTION_PROCS;
+QGL_1_1_FIXED_FUNCTION_PROCS;
 #undef GLE
 
 #define GL_INDEX_TYPE		GL_UNSIGNED_INT
@@ -2059,6 +2061,11 @@ extern cvar_t	*r_surfaceFlagNoDraw;
 extern cvar_t	*r_colorize2DIdentity;
 extern cvar_t	*r_missingLightmapUseDiffuseLighting;
 
+extern cvar_t   *r_debugLineDepthTest;
+extern cvar_t   *r_debugLineWidth;
+extern cvar_t   *r_debugArrowStep;
+extern cvar_t   *r_debugPolygonFilled;
+
 //====================================================================
 
 static ID_INLINE qboolean ShaderRequiresCPUDeforms(const shader_t * shader)
@@ -2350,6 +2357,28 @@ void RB_InstantQuad2(vec4_t quadVerts[4], vec2_t texCoords[4]);
 
 void RB_ShowImages( void );
 
+
+/*
+============================================================
+
+DEBUG TOOLS
+
+============================================================
+*/
+
+void RB_ClearDebugLines( int time );
+void RB_AddDebugLine( const vec4_t color, const vec3_t start, const vec3_t end, const int lifetime, const qboolean depthTest );
+void RB_DebugArrow( const vec4_t color, const vec3_t start, const vec3_t end, int size, const int lifetime );
+void RB_DebugWinding( const vec4_t color, const fixedWinding_t *w, const vec3_t origin, const vec3_t axis[3], const int lifetime, const qboolean depthTest );
+void RB_DebugCircle( const vec4_t color, const vec3_t origin, const vec3_t dir, const float radius, const int numSteps, const int lifetime, const qboolean depthTest );
+void RB_DebugBounds( const vec4_t color, const vec3_t bounds[2], const vec3_t org, const int lifetime );
+void RB_DebugAxis( const vec3_t origin, const vec3_t axis[3] );
+
+void RB_ClearDebugPolygons( int time );
+void RB_AddDebugPolygon( const vec4_t color, const fixedWinding_t *winding, const int lifeTime, const qboolean depthTest );
+
+void RB_RenderDebugTools( void );
+void RB_ShutdownDebugTools( void );
 
 /*
 ============================================================

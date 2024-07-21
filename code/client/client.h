@@ -29,7 +29,7 @@ Suite 120, Rockville, Maryland 20850 USA.
 */
 // client.h -- primary header for client
 
-#include "../qcommon/q_shared.h"
+#include "../idlib/q_shared.h"
 #include "../qcommon/qcommon.h"
 #include "../renderercommon/tr_public.h"
 #include "keys.h"

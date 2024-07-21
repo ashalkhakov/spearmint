@@ -29,9 +29,11 @@ Suite 120, Rockville, Maryland 20850 USA.
 */
 // server.h
 
-#include "../qcommon/q_shared.h"
+#include "../idlib/q_shared.h"
 #include "../qcommon/qcommon.h"
-#include "../game/g_public.h"
+#include "sv_clip.h" // includes "../game/g_public.h"
+
+#define USE_CLIP 1
 
 //=============================================================================
 
@@ -53,8 +55,12 @@ typedef struct voipServerPacket_s
 #endif
 
 typedef struct svEntity_s {
+#if USE_CLIP
+    clipModel_t     model;
+#else
 	struct worldSector_s *worldSector;
 	struct svEntity_s *nextEntityInWorldSector;
+#endif
 	
 	int			numClusters;		// if -1, use headnode instead
 	int			clusternums[MAX_ENT_CLUSTERS];
@@ -89,6 +95,9 @@ typedef struct {
 	darray_t		svEntitiesBaseline; // for delta compression of initial sighting
 
 	char			*entityParsePoint;	// used during game VM init
+
+	clip_t  		clip;				// collision detection
+    qboolean        clipInitialized;
 
 	// the game virtual machine will update these on init and changes
 	sharedEntity_t	*gentities;

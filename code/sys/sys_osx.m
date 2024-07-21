@@ -35,7 +35,7 @@ Suite 120, Rockville, Maryland 20850 USA.
 // Please note that this file is just some Mac-specific bits. Most of the
 // Mac OS X code is shared with other Unix platforms in sys_unix.c ...
 
-#include "../qcommon/q_shared.h"
+#include "../idlib/q_shared.h"
 #include "../qcommon/qcommon.h"
 #include "sys_local.h"
 

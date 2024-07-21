@@ -254,6 +254,11 @@ cvar_t	*r_surfaceFlagNoDraw;
 cvar_t	*r_colorize2DIdentity;
 cvar_t	*r_missingLightmapUseDiffuseLighting;
 
+cvar_t  *r_debugLineDepthTest;
+cvar_t  *r_debugLineWidth;
+cvar_t  *r_debugArrowStep;
+cvar_t  *r_debugPolygonFilled;
+
 cvar_t	*r_maxpolys;
 int		max_polys;
 cvar_t	*r_maxpolyverts;
@@ -1471,6 +1476,11 @@ void R_Register( void )
 	r_maxpolyverts = ri.Cvar_Get( "r_maxpolyverts", va("%d", MAX_POLYVERTS*ri.CL_MaxSplitView()), 0);
 	r_maxpolybuffers = ri.Cvar_Get( "r_maxpolybuffers", va("%d", MAX_POLYBUFFERS*ri.CL_MaxSplitView()), 0);
 
+    r_debugLineDepthTest = ri.Cvar_Get( "r_debugLineDepthTest", "0", CVAR_ARCHIVE );
+    r_debugLineWidth = ri.Cvar_Get( "r_debugLineWidth", "1", CVAR_ARCHIVE );
+    r_debugArrowStep = ri.Cvar_Get( "r_debugArrowStep", "120", CVAR_ARCHIVE );
+    r_debugPolygonFilled = ri.Cvar_Get( "r_debugPolygonFilled", "1", CVAR_ARCHIVE );
+
 	// make sure all the commands added here are also
 	// removed in R_Shutdown
 	ri.Cmd_AddCommand( "imagelist", R_ImageList_f );
@@ -1664,6 +1674,7 @@ void RE_Shutdown( qboolean destroyWindow ) {
 	ri.Cmd_RemoveCommand( "gfxmeminfo" );
 	ri.Cmd_RemoveCommand( "exportCubemaps" );
 
+    RB_ShutdownDebugTools();
 
 	if ( tr.registered ) {
 		R_IssuePendingRenderCommands();
@@ -1791,6 +1802,16 @@ refexport_t *GetRefAPI ( int apiVersion, refimport_t *rimp, qboolean headless ) 
 	re.GetSurfaceShader = RE_GetSurfaceShader;
 	re.GetShaderFromModel = RE_GetShaderFromModel;
 	re.GetShaderName = RE_GetShaderName;
+
+    re.DebugClearLines = RB_ClearDebugLines;
+    re.DebugLine = RB_AddDebugLine;
+    re.DebugArrow = RB_DebugArrow;
+    re.DebugWinding = RB_DebugWinding;
+    re.DebugCircle = RB_DebugCircle;
+    re.DebugBounds = RB_DebugBounds;
+    re.DebugAxis = RB_DebugAxis;
+    re.DebugClearPolygons = RB_ClearDebugPolygons;
+    re.DebugPolygon = RB_AddDebugPolygon;
 
 	return &re;
 }

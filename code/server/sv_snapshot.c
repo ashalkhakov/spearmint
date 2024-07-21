@@ -403,14 +403,14 @@ static void SV_AddEntitiesVisibleFromPoint( int psIndex, int playerNum, vec3_t o
 		return;
 	}
 
-	leafnum = CM_PointLeafnum (origin);
-	clientarea = CM_LeafArea (leafnum);
-	clientcluster = CM_LeafCluster (leafnum);
+	leafnum = cme.PointLeafnum (origin);
+	clientarea = cme.LeafArea (leafnum);
+	clientcluster = cme.LeafCluster (leafnum);
 
 	// calculate the visible areas
-	frame->areabytes[psIndex] = CM_WriteAreaBits( frame->areabits[psIndex], clientarea );
+	frame->areabytes[psIndex] = cme.WriteAreaBits( frame->areabits[psIndex], clientarea );
 
-	clientpvs = CM_ClusterPVS (clientcluster);
+	clientpvs = cme.ClusterPVS (clientcluster);
 
 	for ( e = 0 ; e < sv.num_entities ; e++ ) {
 		ent = SV_GentityNum(e);
@@ -460,10 +460,10 @@ static void SV_AddEntitiesVisibleFromPoint( int psIndex, int playerNum, vec3_t o
 
 		// ignore if not touching a PV leaf
 		// check area
-		if ( !CM_AreasConnected( clientarea, svEnt->areanum ) ) {
+		if ( !cme.AreasConnected( clientarea, svEnt->areanum ) ) {
 			// doors can legally straddle two areas, so
 			// we may need to check another one
-			if ( !CM_AreasConnected( clientarea, svEnt->areanum2 ) ) {
+			if ( !cme.AreasConnected( clientarea, svEnt->areanum2 ) ) {
 				continue;		// blocked by a door
 			}
 		}

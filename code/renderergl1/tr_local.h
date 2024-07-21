@@ -32,8 +32,8 @@ Suite 120, Rockville, Maryland 20850 USA.
 #ifndef TR_LOCAL_H
 #define TR_LOCAL_H
 
-#include "../qcommon/q_shared.h"
-#include "../qcommon/qfiles.h"
+#include "../idlib/q_shared.h"
+#include "../idlib/qfiles.h"
 #include "../qcommon/qcommon.h"
 #include "../renderercommon/tr_public.h"
 #include "../renderercommon/tr_common.h"
@@ -1296,6 +1296,11 @@ extern cvar_t	*r_surfaceFlagNoDraw;
 extern cvar_t	*r_colorize2DIdentity;
 extern cvar_t	*r_missingLightmapUseDiffuseLighting;
 
+extern cvar_t   *r_debugLineDepthTest;
+extern cvar_t   *r_debugLineWidth;
+extern cvar_t   *r_debugArrowStep;
+extern cvar_t   *r_debugPolygonFilled;
+
 //====================================================================
 
 void R_SwapBuffers( int );
@@ -1520,6 +1525,29 @@ void RB_AddQuadStamp( vec3_t origin, vec3_t left, vec3_t up, byte *color );
 void RB_AddQuadStampExt( vec3_t origin, vec3_t left, vec3_t up, byte *color, float s1, float t1, float s2, float t2 );
 
 void RB_ShowImages( void );
+
+
+/*
+============================================================
+
+DEBUG TOOLS
+
+============================================================
+*/
+
+void RB_ClearDebugLines( int time );
+void RB_AddDebugLine( const vec4_t color, const vec3_t start, const vec3_t end, const int lifetime, const qboolean depthTest );
+void RB_DebugArrow( const vec4_t color, const vec3_t start, const vec3_t end, int size, const int lifetime );
+void RB_DebugWinding( const vec4_t color, const fixedWinding_t *w, const vec3_t origin, const vec3_t axis[3], const int lifetime, const qboolean depthTest );
+void RB_DebugCircle( const vec4_t color, const vec3_t origin, const vec3_t dir, const float radius, const int numSteps, const int lifetime, const qboolean depthTest );
+void RB_DebugBounds( const vec4_t color, const vec3_t bounds[2], const vec3_t org, const int lifetime );
+void RB_DebugAxis( const vec3_t origin, const vec3_t axis[3] );
+
+void RB_ClearDebugPolygons( int time );
+void RB_AddDebugPolygon( const vec4_t color, const fixedWinding_t *winding, const int lifeTime, const qboolean depthTest );
+
+void RB_RenderDebugTools( void );
+void RB_ShutdownDebugTools( void );
 
 
 /*

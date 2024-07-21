@@ -31,7 +31,7 @@ Suite 120, Rockville, Maryland 20850 USA.
 // snddma_null.c
 // all other sound mixing is portable
 
-#include "../qcommon/q_shared.h"
+#include "../idlib/q_shared.h"
 #include "../qcommon/qcommon.h"
 
 qboolean SNDDMA_Init(void)

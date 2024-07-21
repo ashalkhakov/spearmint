@@ -29,7 +29,7 @@ Suite 120, Rockville, Maryland 20850 USA.
 */
 // cvar.c -- dynamic variable tracking
 
-#include "q_shared.h"
+#include "../idlib/q_shared.h"
 #include "qcommon.h"
 
 cvar_t		*cvar_vars = NULL;

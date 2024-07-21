@@ -24,7 +24,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 /* NOTE: mad.h was modified to use config.h instead of generating mad.h for each platform. */
 /* NOTE: "ifdef HAVE_CONFIG_H" was replaced with "if 1 // ifdef HAVE_CONFIG_H" */
 /* NOTE: One of FPM_DEFAULT, FPM_INTEL, etc must be defined by the build system for files including mad.h in engine and the libmad source. */
-#include "../qcommon/q_platform.h"
+#include "../idlib/q_platform.h"
 
 /* Define to enable diagnostic debugging support. */
 /* #undef DEBUG */

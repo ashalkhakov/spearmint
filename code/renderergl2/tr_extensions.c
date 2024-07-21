@@ -61,6 +61,9 @@ void GLimp_InitExtraExtensions(void)
 	// GL function loader, based on https://gist.github.com/rygorous/16796a0c876cf8a5f542caddb55bce8a
 #define GLE(ret, name, ...) qgl##name = (name##proc *) SDL_GL_GetProcAddress("gl" #name);
 
+    QGL_DESKTOP_1_1_FIXED_FUNCTION_PROCS;
+    QGL_1_1_FIXED_FUNCTION_PROCS;
+
 	// OpenGL 1.5 - GL_ARB_occlusion_query
 	glRefConfig.occlusionQuery = qtrue;
 	QGL_ARB_occlusion_query_PROCS;

@@ -28,13 +28,13 @@ Suite 120, Rockville, Maryland 20850 USA.
 ===========================================================================
 */
 
-#include "../qcommon/q_shared.h"
+#include "../idlib/q_shared.h"
 #include "../bspc/l_log.h"
 #include "../bspc/l_qfiles.h"
-#include "../botlib/l_memory.h"
-#include "../botlib/l_script.h"
-#include "../botlib/l_precomp.h"
-#include "../botlib/l_struct.h"
+#include "../idlib/l_memory.h"
+#include "../idlib/l_script.h"
+#include "../idlib/l_precomp.h"
+#include "../idlib/l_struct.h"
 #include "../botlib/aasfile.h"
 #include "../botlib/botlib.h"
 #include "../botlib/be_aas.h"

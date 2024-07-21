@@ -33,7 +33,7 @@ Suite 120, Rockville, Maryland 20850 USA.
 #ifndef __QAL_H__
 #define __QAL_H__
 
-#include "../qcommon/q_shared.h"
+#include "../idlib/q_shared.h"
 #include "../qcommon/qcommon.h"
 
 #ifdef USE_OPENAL_DLOPEN

@@ -28,7 +28,7 @@ Suite 120, Rockville, Maryland 20850 USA.
 ===========================================================================
 */
 
-#include "q_shared.h"
+#include "../idlib/q_shared.h"
 #include "qcommon.h"
 
 /*

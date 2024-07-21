@@ -55,7 +55,7 @@ Suite 120, Rockville, Maryland 20850 USA.
 #include "sys_local.h"
 #include "sys_loadlib.h"
 
-#include "../qcommon/q_shared.h"
+#include "../idlib/q_shared.h"
 #include "../qcommon/qcommon.h"
 
 static char binaryPath[ MAX_OSPATH ] = { 0 };

@@ -29,7 +29,7 @@ Suite 120, Rockville, Maryland 20850 USA.
 */
 // cmd.c -- Quake script command processing module
 
-#include "q_shared.h"
+#include "../idlib/q_shared.h"
 #include "qcommon.h"
 
 #define	MAX_CMD_BUFFER  128*1024

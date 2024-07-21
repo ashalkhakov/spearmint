@@ -30,6 +30,7 @@ Suite 120, Rockville, Maryland 20850 USA.
 // world.c -- world query functions
 
 #include "server.h"
+#include "../qcommon/debugvis.h"
 
 /*
 ================
@@ -41,13 +42,31 @@ be returned, otherwise a custom box tree or capsule will be constructed.
 ================
 */
 clipHandle_t SV_ClipHandleForEntity( const sharedEntity_t *ent ) {
+	char			modelName[MAX_QPATH];
+	traceModel_t	trm;
+	vec3_t			bounds[2];
+
 	if ( ent->s.collisionType == CT_SUBMODEL ) {
 		// explicit hulls in the BSP model
-		return CM_InlineModel( ent->s.modelindex );
+		snprintf( modelName, sizeof(modelName), "*%d", ent->s.modelindex );
+		return cme.LoadModel( modelName, qfalse );
 	}
 
 	// create a temp tree or capsule from bounding box sizes
-	return CM_TempBoxModel( ent->s.mins, ent->s.maxs, ent->s.collisionType, ent->s.contents );
+    trm.type = TRM_INVALID;
+	VectorCopy( ent->s.mins, bounds[0] );
+	VectorCopy( ent->s.maxs, bounds[1] );
+	switch ( ent->s.collisionType ) {
+		case CT_AABB:
+			TraceModelSetupBox( &trm, bounds );
+			break;
+		case CT_CAPSULE:
+			TraceModelSetupDodecahedron( &trm, bounds );
+			break;
+	}
+
+	// FIXME: need a dummy material with the given contents
+	return cme.SetupTrmModel( &trm, 0 );
 }
 
 
@@ -85,6 +104,9 @@ SV_SectorList_f
 ===============
 */
 void SV_SectorList_f( void ) {
+#if USE_CLIP
+    ClipPrintSectorList( &sv.clip );
+#else
 	int				i, c;
 	worldSector_t	*sec;
 	svEntity_t		*ent;
@@ -98,8 +120,10 @@ void SV_SectorList_f( void ) {
 		}
 		Com_Printf( "sector %i: %i entities\n", i, c );
 	}
+#endif
 }
 
+#if !USE_CLIP
 /*
 ===============
 SV_CreateworldSector
@@ -141,6 +165,7 @@ static worldSector_t *SV_CreateworldSector( int depth, vec3_t mins, vec3_t maxs 
 
 	return anode;
 }
+#endif
 
 /*
 ===============
@@ -149,16 +174,17 @@ SV_ClearWorld
 ===============
 */
 void SV_ClearWorld( void ) {
+#if !USE_CLIP
 	clipHandle_t	h;
-	vec3_t			mins, maxs;
+	vec3_t			bounds[2];
 
 	Com_Memset( sv_worldSectors, 0, sizeof(sv_worldSectors) );
 	sv_numworldSectors = 0;
 
 	// get world map bounds
-	h = CM_InlineModel( 0 );
-	CM_ModelBounds( h, mins, maxs );
-	SV_CreateworldSector( 0, mins, maxs );
+	h = cme.GetModelBounds( 0, bounds );
+	SV_CreateworldSector( 0, bounds[0], bounds[1] );
+#endif
 }
 
 
@@ -171,17 +197,24 @@ SV_UnlinkEntity
 void SV_UnlinkEntity( sharedEntity_t *gEnt ) {
 	svEntity_t		*ent;
 	svEntity_t		*scan;
+#if !USE_CLIP
 	worldSector_t	*ws;
+#endif
 	sharedPlayerState_t	*ps;
 
 	ent = SV_SvEntityForGentity( gEnt );
 
 	gEnt->r.linked = qfalse;
+
 	if (gEnt->s.number < MAX_CLIENTS) {
 		ps = SV_GamePlayerNum(gEnt->s.number);
 		ps->linked = qfalse;
 	}
 
+#if USE_CLIP
+    ClipModelUnlink( &ent->model );
+    ClipModelSetOwner( &ent->model, NULL );
+#else
 	ws = ent->worldSector;
 	if ( !ws ) {
 		return;		// not linked in anywhere
@@ -201,6 +234,7 @@ void SV_UnlinkEntity( sharedEntity_t *gEnt ) {
 	}
 
 	Com_Printf( "WARNING: SV_UnlinkEntity: not found in worldSector\n" );
+#endif
 }
 
 
@@ -220,14 +254,17 @@ void SV_LinkEntity( sharedEntity_t *gEnt ) {
 	int			area;
 	int			lastLeaf;
 	float		*origin, *angles;
+    vec3_t      axis[3];
 	svEntity_t	*ent;
 	sharedPlayerState_t	*ps;
 
 	ent = SV_SvEntityForGentity( gEnt );
 
+#if !USE_CLIP
 	if ( ent->worldSector ) {
 		SV_UnlinkEntity( gEnt );	// unlink from old position
 	}
+#endif
 
 	// get the position
 	origin = gEnt->r.currentOrigin;
@@ -249,6 +286,41 @@ void SV_LinkEntity( sharedEntity_t *gEnt ) {
 		VectorAdd (origin, gEnt->s.maxs, gEnt->r.absmax);
 	}
 
+#if USE_CLIP
+    // TODO: what should the lifetime of models be?
+    ClipModelInit( &ent->model );
+
+    // TODO: what should be put here?
+    int newId = gEnt->s.number;
+	if ( gEnt->s.collisionType == CT_SUBMODEL ) {
+        char name[MAX_QPATH];
+
+        AnglesToAxis( angles, axis );
+        sprintf( name, "*%d", gEnt->s.modelindex );
+        ClipModelInitFromModel( &ent->model, name );
+    } else {
+        traceModel_t trm;
+        vec3_t bounds[2];
+
+        // boxes don't rotate
+        AxisClear( axis );
+
+        VectorCopy( gEnt->s.mins, bounds[0] );
+        VectorCopy( gEnt->s.maxs, bounds[1] );
+        trm.type = TRM_INVALID;
+        TraceModelSetupBox( &trm, bounds );
+        ClipModelInitFromTraceModel( &ent->model, &trm );
+    }
+    ClipModelLink2( &ent->model, &sv.clip, gEnt, newId, origin, axis, -1 );
+    if ( gEnt->r.ownerNum != -1 ) {
+        sharedEntity_t *owner = SV_GentityNum( gEnt->r.ownerNum );
+        ClipModelSetOwner( &ent->model, owner );
+    } else {
+        ClipModelSetOwner( &ent->model, NULL );
+    }
+
+#endif
+
 	// because movement is clipped an epsilon away from an actual edge,
 	// we must fully check even when bounding boxes don't quite touch
 	gEnt->r.absmin[0] -= 1;
@@ -265,7 +337,7 @@ void SV_LinkEntity( sharedEntity_t *gEnt ) {
 	ent->areanum2 = -1;
 
 	//get all leafs, including solids
-	num_leafs = CM_BoxLeafnums( gEnt->r.absmin, gEnt->r.absmax,
+	num_leafs = cme.BoxLeafnums( gEnt->r.absmin, gEnt->r.absmax,
 		leafs, MAX_TOTAL_ENT_LEAFS, &lastLeaf );
 
 	// if none of the leafs were inside the map, the
@@ -276,7 +348,7 @@ void SV_LinkEntity( sharedEntity_t *gEnt ) {
 
 	// set areas, even from clusters that don't fit in the entity array
 	for (i=0 ; i<num_leafs ; i++) {
-		area = CM_LeafArea (leafs[i]);
+		area = cme.LeafArea (leafs[i]);
 		if (area != -1) {
 			// doors may legally straggle two areas,
 			// but nothing should evern need more than that
@@ -296,7 +368,7 @@ void SV_LinkEntity( sharedEntity_t *gEnt ) {
 	// store as many explicit clusters as we can
 	ent->numClusters = 0;
 	for (i=0 ; i < num_leafs ; i++) {
-		cluster = CM_LeafCluster( leafs[i] );
+		cluster = cme.LeafCluster( leafs[i] );
 		if ( cluster != -1 ) {
 			ent->clusternums[ent->numClusters++] = cluster;
 			if ( ent->numClusters == MAX_ENT_CLUSTERS ) {
@@ -307,9 +379,10 @@ void SV_LinkEntity( sharedEntity_t *gEnt ) {
 
 	// store off a last cluster if we need to
 	if ( i != num_leafs ) {
-		ent->lastCluster = CM_LeafCluster( lastLeaf );
+		ent->lastCluster = cme.LeafCluster( lastLeaf );
 	}
 
+#if !USE_CLIP
 	gEnt->r.linkcount++;
 
 	// find the first world sector node that the ent's box crosses
@@ -330,8 +403,9 @@ void SV_LinkEntity( sharedEntity_t *gEnt ) {
 	ent->worldSector = node;
 	ent->nextEntityInWorldSector = node->entities;
 	node->entities = ent;
-
+#endif
 	gEnt->r.linked = qtrue;
+
 	if (gEnt->s.number < MAX_CLIENTS) {
 		ps = SV_GamePlayerNum(gEnt->s.number);
 		ps->linked = qtrue;
@@ -355,6 +429,7 @@ typedef struct {
 	int			count, maxcount;
 } areaParms_t;
 
+#if !USE_CLIP
 
 /*
 ====================
@@ -413,7 +488,7 @@ SV_AreaEntities
 */
 int SV_AreaEntities( const vec3_t mins, const vec3_t maxs, int *entityList, int maxcount ) {
 	areaParms_t		ap;
-
+    
 	ap.mins = mins;
 	ap.maxs = maxs;
 	ap.list = entityList;
@@ -425,10 +500,40 @@ int SV_AreaEntities( const vec3_t mins, const vec3_t maxs, int *entityList, int 
 	return ap.count;
 }
 
+#else
 
+/*
+================
+SV_AreaEntities
+================
+*/
+int SV_AreaEntities( const vec3_t mins, const vec3_t maxs, int *entityList, int maxcount ) {
+	vec3_t bounds[2];
+    sharedEntity_t **list;
+    int i, num;
+
+    VectorCopy( mins, bounds[0] );
+    VectorCopy( maxs, bounds[1] );
+
+    // TODO: get rid of memory allocation
+    list = ii.GetMemory( maxcount * sizeof( *list ) );
+
+    num = ClipEntitiesTouchingBounds( &sv.clip, bounds, -1, list, maxcount );
+    for ( i = 0; i < num; i++ ) {
+        entityList[i] = list[i]->s.number;
+    }
+
+    ii.FreeMemory( list );
+
+	return num;
+}
+
+
+#endif
 
 //===========================================================================
 
+#if !USE_CLIP
 
 typedef struct {
 	vec3_t		boxmins, boxmaxs;// enclose the test object along entire move
@@ -691,8 +796,6 @@ void SV_ClipToEntities( trace_t *results, const vec3_t start, const vec3_t mins,
 	*results = clip.trace;
 }
 
-
-
 /*
 =============
 SV_PointContents
@@ -705,9 +808,10 @@ int SV_PointContents( const vec3_t p, int passEntityNum ) {
 	int			contents, c2;
 	clipHandle_t	clipHandle;
 	float		*angles;
+	vec3_t		axis[3];
 
 	// get base contents from world
-	contents = CM_PointContents( p, 0 );
+	contents = cme.Contents( p, NULL, axisDefault, 0, 0, vec3_origin, axisDefault );
 
 	// or in contents from all the other entities
 	num = SV_AreaEntities( p, p, touch, MAX_GENTITIES );
@@ -730,7 +834,9 @@ int SV_PointContents( const vec3_t p, int passEntityNum ) {
 			angles = vec3_origin;	// boxes don't rotate
 		}
 
-		c2 = CM_TransformedPointContents (p, clipHandle, hit->r.currentOrigin, angles);
+		AnglesToAxis( angles, axis );
+
+		c2 = cme.Contents (p, NULL, axisDefault, 0, clipHandle, hit->r.currentOrigin, axis);
 
 		contents |= c2;
 	}
@@ -738,4 +844,128 @@ int SV_PointContents( const vec3_t p, int passEntityNum ) {
 	return contents;
 }
 
+#else
 
+static void CmTraceToTrace( cm_trace_t *t, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, trace_t *trace, traceModel_t *trm, cmHandle_t model, vec3_t origin, vec3_t axis[3], int brushmask ) {
+    int i;
+    vec3_t dir;
+
+    memset( trace, 0, sizeof( *trace ) );
+
+	trace->fraction = t->fraction;
+    VectorSubtract( end, start, dir );
+    VectorMA( start, trace->fraction, dir, trace->endpos );
+	//VectorCopy( t->endpos, trace->endpos ); // TODO: worldspace or not?
+
+    if ( t->c.type != CONTACT_NONE ) {
+        VectorCopy( t->c.point, trace->endpos );
+        VectorCopy( t->c.normal, trace->plane.normal );
+        trace->plane.dist = -t->c.dist;
+		trace->plane.type = PlaneTypeForNormal( trace->plane.normal );
+		SetPlaneSignbits( &trace->plane );
+        trace->surfaceNum = t->c.modelFeature + 1;
+        trace->surfaceFlags = cme.CM_GetMaterialSurfaceFlags( t->c.material );
+        trace->contents = t->c.contents;
+        trace->entityNum = t->c.entityNum;
+    }
+	trace->lateralFraction = 0.0f;
+/*
+    if ( cme.Contents( start, trm, axisDefault, -1, model, origin, axis ) & brushmask ) {
+        trace->startsolid = qtrue;
+    }
+    if ( trace->startsolid ) {
+        int c = cme.Contents( trace->endpos, trm, axisDefault, -1, model, origin, axis ) & brushmask;
+        if ( c ) {
+            trace->allsolid = qtrue;
+            //trace->fraction = 0;
+            //trace->contents = c;
+        }
+    }*/
+}
+
+/*
+==================
+SV_Trace
+
+Moves the given mins/maxs volume through the world from start to end.
+passEntityNum and entities owned by passEntityNum are explicitly not checked.
+==================
+*/
+void SV_Trace( trace_t *results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask, traceType_t type ) {
+    cm_trace_t      trace;
+    sharedEntity_t  *passEntity;
+    vec3_t          bounds[2];
+
+    passEntity = SV_GentityNum( passEntityNum );
+
+	if ( !mins ) {
+		mins = vec3_origin;
+	}
+	if ( !maxs ) {
+		maxs = vec3_origin;
+	}
+
+    VectorCopy( mins, bounds[0] );
+    VectorCopy( maxs, bounds[1] );
+
+    ClipTraceBounds( &sv.clip, &trace, start, end, bounds, contentmask, passEntity );
+    CmTraceToTrace( &trace, start, end, mins, maxs, results, NULL, 0, vec3_origin, axisDefault, contentmask );
+}
+
+
+/*
+=============
+SV_ClipToEntities
+
+SV_Trace that doesn't clip to world
+=============
+*/
+void SV_ClipToEntities( trace_t *results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask, traceType_t type ) {
+    cm_trace_t      trace;
+    clipModel_t     *model;
+    sharedEntity_t  *passEntity;
+    vec3_t          bounds[2];
+    traceModel_t    trm;
+
+    passEntity = SV_GentityNum( passEntityNum );
+
+	if ( !mins ) {
+		mins = vec3_origin;
+	}
+	if ( !maxs ) {
+		maxs = vec3_origin;
+	}
+
+    VectorCopy( mins, bounds[0] );
+    VectorCopy( maxs, bounds[1] );
+    trm.type = TRM_INVALID;
+    TraceModelSetupBox( &trm, bounds );
+    model = ClipDefaultClipModel( &sv.clip );
+    ClipModelLoadTraceModel( model, &trm );
+
+    ClipTranslationEntities( &sv.clip, &trace, start, end, model, axisDefault, contentmask, passEntity );
+    CmTraceToTrace( &trace, start, end, mins, maxs, results, NULL, 0, vec3_origin, axisDefault, contentmask );
+}
+
+/*
+=============
+SV_PointContents
+=============
+*/
+int SV_PointContents( const vec3_t p, int passEntityNum ) {
+    clipModel_t *model;
+    sharedEntity_t *passEntity;
+    traceModel_t trm;
+
+    passEntity = SV_GentityNum( passEntityNum );
+
+    model = ClipDefaultClipModel( &sv.clip );
+
+    trm.type = TRM_INVALID;
+    TraceModelSetupBox2( &trm, 0 );
+    ClipModelLoadTraceModel( model, &trm );
+
+    return ClipContents( &sv.clip, p, model, axisDefault, -1, passEntity );
+}
+
+#endif

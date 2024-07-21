@@ -37,7 +37,7 @@ Suite 120, Rockville, Maryland 20850 USA.
 #	include <SDL.h>
 #endif
 
-#include "../qcommon/q_shared.h"
+#include "../idlib/q_shared.h"
 #include "../client/snd_local.h"
 #include "../client/client.h"
 

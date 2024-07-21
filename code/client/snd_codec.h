@@ -32,7 +32,7 @@ Suite 120, Rockville, Maryland 20850 USA.
 #ifndef _SND_CODEC_H_
 #define _SND_CODEC_H_
 
-#include "../qcommon/q_shared.h"
+#include "../idlib/q_shared.h"
 #include "../qcommon/qcommon.h"
 
 typedef struct snd_info_s

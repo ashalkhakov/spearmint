@@ -30,7 +30,7 @@ Suite 120, Rockville, Maryland 20850 USA.
 #ifndef TR_COMMON_H
 #define TR_COMMON_H
 
-#include "../qcommon/q_shared.h"
+#include "../idlib/q_shared.h"
 #include "../renderercommon/tr_public.h"
 #include "qgl.h"
 

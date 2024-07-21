@@ -31,7 +31,8 @@ Suite 120, Rockville, Maryland 20850 USA.
 #define __TR_PUBLIC_H
 
 #include "tr_types.h"
-#include "../qcommon/bsp.h"
+#include "../idlib/q_extramath.h"
+#include "../idlib/bsp/bsp.h"
 
 #ifdef USE_LOCAL_HEADERS
   #include "../zlib/zlib.h"
@@ -39,7 +40,7 @@ Suite 120, Rockville, Maryland 20850 USA.
   #include <zlib.h>
 #endif
 
-#define	REF_API_VERSION		9
+#define	REF_API_VERSION		10
 
 //
 // these are the functions exported by the refresh module
@@ -136,6 +137,20 @@ typedef struct {
 	qhandle_t (*GetSurfaceShader)( int surfaceNum, int lightmapIndex );
 	qhandle_t (*GetShaderFromModel)( qhandle_t hModel, int surfnum, int lightmapIndex );
 	void (*GetShaderName)( qhandle_t hShader, char *buffer, int bufferSize );
+
+    // version 10 adds debug visualization
+
+	void ( *DebugClearLines )( int time );
+    void ( *DebugLine )( const vec4_t color, const vec3_t start, const vec3_t end, const int lifetime, const qboolean depthTest );
+	void ( *DebugArrow )( const vec4_t color, const vec3_t start, const vec3_t end, int size, const int lifetime );
+	void ( *DebugWinding )( const vec4_t color, const fixedWinding_t *w, const vec3_t origin, const vec3_t axis[3], const int lifetime, const qboolean depthTest );
+	void ( *DebugCircle )( const vec4_t color, const vec3_t origin, const vec3_t dir, const float radius, const int numSteps, const int lifetime, const qboolean depthTest );
+	void ( *DebugBounds )( const vec4_t color, const vec3_t bounds[2], const vec3_t org, const int lifetime );
+	void ( *DebugAxis )( const vec3_t origin, const vec3_t axis[3] );
+
+	void ( *DebugClearPolygons )( int time );
+	void ( *DebugPolygon )( const vec4_t color, const fixedWinding_t *winding, const int lifeTime, const qboolean depthTest );
+
 } refexport_t;
 
 //

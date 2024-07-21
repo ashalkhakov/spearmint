@@ -30,7 +30,7 @@ Suite 120, Rockville, Maryland 20850 USA.
 // snd_local.h -- private sound definations
 
 
-#include "../qcommon/q_shared.h"
+#include "../idlib/q_shared.h"
 #include "../qcommon/qcommon.h"
 #include "snd_public.h"
 

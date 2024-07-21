@@ -30,6 +30,7 @@ Suite 120, Rockville, Maryland 20850 USA.
 // sv_bot.c
 
 #include "server.h"
+#include "../qcommon/debugvis.h"
 
 typedef struct bot_debugpoly_s
 {
@@ -43,6 +44,7 @@ static bot_debugpoly_t *debugpolygons;
 cvar_t *bot_maxdebugpolys;
 
 cvar_t *bot_enable;
+cvar_t *sv_showCollisionWorld;
 
 
 /*
@@ -246,6 +248,20 @@ SV_BotFrame
 ==================
 */
 void SV_BotFrame( int time ) {
+	if ( sv_showCollisionWorld->integer ) {
+        client_t *cl = SV_ClientForPlayerNum( 0 );
+
+        Com_DebugClearLines( time );
+        Com_DebugClearPolygons( time );
+
+        vec3_t eyeOrigin;
+        if ( cl && cl->localPlayers[0]->gentity ) {
+            VectorCopy( cl->localPlayers[0]->gentity->r.currentOrigin, eyeOrigin );
+            eyeOrigin[2] += 15;
+            cme.DrawModel( 0, vec3_origin, axisDefault, eyeOrigin, 128.0f );
+        }
+	}
+
 	if (!bot_enable->integer) return;
 	//NOTE: maybe the game is already shutdown
 	if (!gvm) return;
@@ -262,6 +278,7 @@ Called at start up and map change
 void SV_BotInitCvars(void) {
 	bot_enable = Cvar_Get( "bot_enable", "1", CVAR_LATCH );
 	bot_maxdebugpolys = Cvar_Get( "bot_maxdebugpolys", "2", CVAR_LATCH );
+    sv_showCollisionWorld = Cvar_Get( "sv_showCollisionWorld", "0", CVAR_CHEAT );
 }
 
 /*

@@ -29,7 +29,8 @@ Suite 120, Rockville, Maryland 20850 USA.
 */
 // common.c -- misc functions used in client and server
 
-#include "q_shared.h"
+#include "../idlib/q_shared.h"
+#include "../idlib/idlib_public.h"
 #include "qcommon.h"
 #include <setjmp.h>
 #ifndef _WIN32
@@ -38,6 +39,8 @@ Suite 120, Rockville, Maryland 20850 USA.
 #else
 #include <winsock.h>
 #endif
+
+#include "debugvis.h"
 
 #include "../sys/sys_loadlib.h"
 
@@ -1157,7 +1160,7 @@ void *Z_Malloc( int size ) {
 #endif
 	void	*buf;
 	
-  //Z_CheckHeap ();	// DEBUG
+  Z_CheckHeap ();	// DEBUG
 
 #ifdef ZONE_DEBUG
 	buf = Z_TagMallocDebug( size, TAG_GENERAL, label, file, line );
@@ -2897,6 +2900,152 @@ static void Com_InitRand(void)
 		srand(time(NULL));
 }
 
+#ifdef ZONE_DEBUG
+void *Com_RefMalloc( int size, char *label, char *file, int line );
+void Com_RefFree( void *pointer, char *label, char *file, int line );
+#else
+void *Com_RefMalloc( int size );
+void Com_RefFree( void *pointer );
+#endif
+
+
+/*
+============
+Com_Malloc
+============
+*/
+#ifdef ZONE_DEBUG
+void *Com_Malloc( int size, char *label, char *file, int line ) {
+	return Z_TagMallocDebug( size, TAG_GENERAL, label, file, line );
+}
+
+void Com_Free( void *pointer, char *label, char *file, int line ) {
+	Z_FreeDebug( pointer, label, file, line );
+}
+#else
+void *Com_Malloc( int size ) {
+	return Z_TagMalloc( size, TAG_GENERAL );
+}
+
+void Com_Free( void *pointer ) {
+	Z_Free( pointer );
+}
+#endif
+
+/*
+====================
+Com_HunkAlloc
+====================
+*/
+void *Com_HunkAlloc( int size ) {
+	if( Hunk_CheckMark() ) {
+		Com_Error( ERR_DROP, "Com_HunkAlloc: Alloc with marks already set" );
+	}
+	return Hunk_Alloc( size, h_high );
+}
+
+/*
+=================
+Com_InitIdLib
+=================
+*/
+idlib_export_t ie;
+static void Com_InitIdLib( void ) {
+	idlib_import_t imp;
+
+	Com_Memset( &imp, 0, sizeof( imp ) );
+
+	imp.MilliSeconds = Com_Milliseconds;
+	imp.Com_Error = Com_Error;
+	imp.Com_Printf = Com_Printf;
+	imp.Com_DPrintf = Com_DPrintf;
+
+#ifdef ZONE_DEBUG
+	imp.GetMemoryDebug = Com_Malloc;
+	imp.FreeMemoryDebug = Com_Free;
+#else
+	imp.GetMemory = Com_Malloc;
+	imp.FreeMemory = Com_Free;
+#endif
+	imp.AvailableMemory = Z_AvailableMemory;
+	imp.HunkAlloc = Com_HunkAlloc;
+
+	imp.FS_FOpenFile = FS_FOpenFileByMode;
+	imp.FS_Read = FS_Read;
+	imp.FS_Write = FS_Write;
+	imp.FS_FCloseFile = FS_FCloseFile;
+	imp.FS_Seek = FS_Seek;
+	imp.FS_ReadFile = FS_ReadFile;
+	imp.FS_FreeFile = FS_FreeFile;
+
+	ie = *GetIdLibAPI( IDLIB_API_VERSION, &imp );
+}
+
+/*
+=================
+Com_InitCmLib
+=================
+*/
+cmexport_t cme;
+static void Com_InitCmLib( void ) {
+	cmimport_t imp;
+
+	Com_Memset( &imp, 0, sizeof( imp ) );
+
+	imp.ii.MilliSeconds = Com_Milliseconds;
+	imp.ii.Com_Error = Com_Error;
+	imp.ii.Com_Printf = Com_Printf;
+	imp.ii.Com_DPrintf = Com_DPrintf;
+
+#ifdef ZONE_DEBUG
+	imp.ii.GetMemoryDebug = Com_Malloc;
+	imp.ii.FreeMemoryDebug = Com_Free;
+#else
+	imp.ii.GetMemory = Com_Malloc;
+	imp.ii.FreeMemory = Com_Free;
+#endif
+	imp.ii.HunkAlloc = Com_HunkAlloc;
+	imp.ii.AvailableMemory = Z_AvailableMemory;
+
+	imp.ii.FS_FOpenFile = FS_FOpenFileByMode;
+	imp.ii.FS_Read = FS_Read;
+	imp.ii.FS_Write = FS_Write;
+	imp.ii.FS_FCloseFile = FS_FCloseFile;
+	imp.ii.FS_Seek = FS_Seek;
+	imp.ii.FS_ReadFile = FS_ReadFile;
+	imp.ii.FS_FreeFile = FS_FreeFile;
+
+	imp.Cvar_Get = Cvar_Get;
+	imp.Cvar_Set = Cvar_Set;
+	imp.Cvar_SetValue = Cvar_SetValue;
+	imp.Cvar_CheckRange = Cvar_CheckRange;
+	imp.Cvar_SetDescription = Cvar_SetDescription;
+
+	imp.Cvar_VariableIntegerValue = Cvar_VariableIntegerValue;
+	imp.Cvar_VariableStringBuffer = Cvar_VariableStringBuffer;
+
+	imp.Cmd_AddCommand = Cmd_AddCommand;
+	imp.Cmd_RemoveCommand = Cmd_RemoveCommand;
+
+	imp.Cmd_Argc = Cmd_Argc;
+	imp.Cmd_Argv = Cmd_Argv;
+	
+	imp.Cmd_ExecuteText = NULL;
+
+    imp.R_DebugClearLines = Com_DebugClearLines;
+    imp.R_DebugLine = Com_DebugLine;
+    imp.R_DebugArrow = Com_DebugArrow;
+    imp.R_DebugWinding = Com_DebugWinding;
+    imp.R_DebugCircle = Com_DebugCircle;
+    imp.R_DebugBounds = Com_DebugBounds;
+    imp.R_DebugAxis = Com_DebugAxis;
+    imp.R_DebugClearPolygons = Com_DebugClearPolygons;
+    imp.R_DebugPolygon = Com_DebugPolygon;
+
+	cme = *GetCollisionModelAPI( CM_API_VERSION, &imp );
+    cme.Init();
+}
+
 /*
 =================
 Com_Init
@@ -2954,6 +3103,10 @@ void Com_Init( char *commandLine ) {
 	}
 
 	FS_InitFilesystem ();
+
+	Com_InitIdLib();
+	ie.Init();
+	Com_InitCmLib();
 
 	Com_InitJournaling();
 
@@ -3239,6 +3392,10 @@ void Com_ShutdownRef( void ) {
 #endif
 }
 
+void CM_DrawDebugSurface( void (*drawPoly)(int color, int numPoints, float *points) ) {
+
+}
+
 /*
 ============
 Com_InitRef
@@ -3311,7 +3468,7 @@ void Com_InitRef( refimport_t *ri ) {
 	ri->Hunk_AllocateTempMemory = Hunk_AllocateTempMemory;
 	ri->Hunk_FreeTempMemory = Hunk_FreeTempMemory;
 
-	ri->CM_ClusterPVS = CM_ClusterPVS;
+	ri->CM_ClusterPVS = cme.ClusterPVS;
 	ri->CM_DrawDebugSurface = CM_DrawDebugSurface;
 	ri->SV_BotDrawDebugPolygons = SV_BotDrawDebugPolygons;
 
@@ -3719,6 +3876,9 @@ void Com_Shutdown (void) {
 	}
 
 	BSP_Shutdown();
+    cme.Shutdown();
+
+	ie.Shutdown();
 }
 
 /*
@@ -4149,4 +4309,103 @@ Com_GameIsSinglePlayer
 */
 qboolean Com_GameIsSinglePlayer( void ) {
 	return ( com_singlePlayerActive->integer );
+}
+
+static void CmTraceToTrace( cm_trace_t *t, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, trace_t *trace, traceModel_t *trm, cmHandle_t model, vec3_t origin, vec3_t axis[3], int brushmask ) {
+    int i;
+    vec3_t dir;
+
+    memset( trace, 0, sizeof( *trace ) );
+
+	trace->fraction = t->fraction;
+    VectorSubtract( end, start, dir );
+    VectorMA( start, trace->fraction, dir, trace->endpos );
+	//VectorCopy( t->endpos, trace->endpos ); // TODO: worldspace or not?
+
+    if ( t->c.type != CONTACT_NONE ) {
+        VectorCopy( t->c.point, trace->endpos );
+        VectorCopy( t->c.normal, trace->plane.normal );
+        trace->plane.dist = -t->c.dist;
+		trace->plane.type = PlaneTypeForNormal( trace->plane.normal );
+		SetPlaneSignbits( &trace->plane );
+        trace->surfaceNum = t->c.modelFeature + 1;
+        trace->surfaceFlags = cme.CM_GetMaterialSurfaceFlags( t->c.material );
+        trace->contents = t->c.contents;
+        trace->entityNum = t->c.entityNum;
+    }
+	trace->lateralFraction = 0.0f;
+
+    if ( cme.Contents( start, trm, axisDefault, -1, model, origin, axis ) & brushmask ) {
+        trace->startsolid = qtrue;
+    }
+    if ( trace->startsolid ) {
+        int c = cme.Contents( trace->endpos, trm, axisDefault, -1, model, origin, axis ) & brushmask;
+        if ( c ) {
+            trace->allsolid = qtrue;
+            //trace->fraction = 0;
+            //trace->contents = c;
+        }
+    }
+}
+
+void		CM_BoxTrace ( trace_t *results, const vec3_t start, const vec3_t end,
+						  const vec3_t mins, const vec3_t maxs,
+						  clipHandle_t model, int brushmask, traceType_t type ) {
+	CM_TransformedBoxTrace( results, start, end, mins, maxs, model, brushmask, vec3_origin, vec3_origin, type );
+}
+
+void		CM_TransformedBoxTrace( trace_t *results, const vec3_t start, const vec3_t end,
+						  const vec3_t mins, const vec3_t maxs,
+						  clipHandle_t model, int brushmask,
+						  const vec3_t origin, const vec3_t angles, traceType_t type ) {
+	cm_trace_t tr;
+	traceModel_t trm;
+	vec3_t		trmBounds[2];
+	vec3_t		axis[3];
+
+    trm.type = TRM_INVALID;
+
+    if ( VectorCompare( angles, vec3_origin ) ) {
+        AxisCopy( axisDefault, axis );
+    } else {
+	    AnglesToAxis( angles, axis );
+    }
+
+	// allow NULL to be passed in for 0,0,0
+	if ( !mins ) {
+		mins = vec3_origin;
+	}
+	if ( !maxs ) {
+		maxs = vec3_origin;
+	}
+
+	VectorCopy( mins, trmBounds[0] );
+	VectorCopy( maxs, trmBounds[1] );
+
+	switch ( type ) {
+		case TT_AABB:
+			TraceModelSetupBox( &trm, trmBounds );
+			break;
+		case TT_CAPSULE:
+		case TT_BISPHERE:
+			TraceModelSetupDodecahedron( &trm, trmBounds );
+			break;
+	}
+
+	cme.Translation( &tr, start, end, &trm, axisDefault, brushmask, model, origin, axis );
+
+	CmTraceToTrace( &tr, start, end, mins, maxs, results, &trm, model, origin, axis, brushmask );
+}
+
+void		CM_BiSphereTrace( trace_t *results, const vec3_t start,
+							const vec3_t end, float startRad, float endRad,
+							clipHandle_t model, int mask ) {
+	CM_TransformedBiSphereTrace( results, start, end, startRad, endRad, model, mask, vec3_origin );
+}
+
+void		CM_TransformedBiSphereTrace( trace_t *results, const vec3_t start,
+							const vec3_t end, float startRad, float endRad,
+							clipHandle_t model, int mask,
+							const vec3_t origin ) {
+	Com_Error( ERR_DROP, "CM_TransformedBiSphereTrace: not implemented" );
 }

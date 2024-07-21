@@ -31,8 +31,8 @@ Suite 120, Rockville, Maryland 20850 USA.
 
 #include "client.h"
 
-#include "../botlib/l_script.h"
-#include "../botlib/l_precomp.h"
+#include "../idlib/l_script.h"
+#include "../idlib/l_precomp.h"
 
 #ifdef USE_MUMBLE
 #include "libmumblelink.h"
@@ -510,7 +510,8 @@ Just adds default parameters that cgame doesn't need to know about
 void CL_CM_LoadMap( const char *mapname ) {
 	int		checksum;
 
-	CM_LoadMap( mapname, qtrue, &checksum );
+	// TODO: checksum
+	cme.LoadBSP( mapname, /*qtrue,*/ &checksum );
 }
 
 /*
@@ -1280,20 +1281,54 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		CL_CM_LoadMap( VMA(1) );
 		return 0;
 	case CG_CM_NUMINLINEMODELS:
-		return CM_NumInlineModels();
-	case CG_CM_INLINEMODEL:
-		return CM_InlineModel( args[1] );
-	case CG_CM_TEMPBOXMODEL:
-		return CM_TempBoxModel( VMA(1), VMA(2), CT_AABB, args[3] );
-	case CG_CM_TEMPCAPSULEMODEL:
-		return CM_TempBoxModel( VMA(1), VMA(2), CT_CAPSULE, args[3] );
-	case CG_CM_POINTCONTENTS:
-		return CM_PointContents( VMA(1), args[2] );
-	case CG_CM_TRANSFORMEDPOINTCONTENTS:
-		return CM_TransformedPointContents( VMA(1), args[2], VMA(3), VMA(4) );
-	case CG_CM_BOXTRACE:
+		return cme.NumInlineModels();
+	case CG_CM_INLINEMODEL: {
+		char modelName[MAX_QPATH];
+
+		sprintf( modelName, "*%d", ( int )args[1] );
+
+		return cme.LoadModel( modelName, qfalse );
+	}
+	case CG_CM_TEMPBOXMODEL: {
+		vec3_t bounds[2];
+		traceModel_t trm;
+		int contents;
+
+		VectorCopy( ((vec_t*)VMA(1)), bounds[0] );
+		VectorCopy( ((vec_t*)VMA(2)), bounds[1] );
+        trm.type = TRM_INVALID;
+		TraceModelSetupBox( &trm, bounds );
+
+		contents = args[3];
+
+		// FIXME: pass the contents
+		return cme.SetupTrmModel( &trm, 0 );
+	}
+	case CG_CM_TEMPCAPSULEMODEL: {
+		vec3_t bounds[2];
+		traceModel_t trm;
+		int contents;
+
+		VectorCopy( (vec_t*)VMA(1), bounds[0] );
+		VectorCopy( (vec_t*)VMA(2), bounds[1] );
+        trm.type = TRM_INVALID;
+		TraceModelSetupDodecahedron( &trm, bounds );
+
+		contents = args[3];
+
+		// FIXME: pass the contents
+		return cme.SetupTrmModel( &trm, 0 );
+	}
+	case CG_CM_POINTCONTENTS: {
+		return cme.Contents( VMA(1), NULL, axisDefault, 0, args[2], vec3_origin, axisDefault );
+	}
+	case CG_CM_TRANSFORMEDPOINTCONTENTS: {
+		return cme.Contents( VMA(1), NULL, axisDefault, 0, args[2], VMA(3), VMA(4) );
+	}
+	case CG_CM_BOXTRACE: {
 		CM_BoxTrace( VMA(1), VMA(2), VMA(3), VMA(4), VMA(5), args[6], args[7], TT_AABB );
 		return 0;
+	}
 	case CG_CM_CAPSULETRACE:
 		CM_BoxTrace( VMA(1), VMA(2), VMA(3), VMA(4), VMA(5), args[6], args[7], TT_CAPSULE );
 		return 0;
@@ -1726,7 +1761,7 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		return getCameraInfo(args[1], VMA(2), VMA(3));
 */
 	case CG_GET_ENTITY_TOKEN:
-		return CM_GetEntityToken( VMA(1), VMA(2), args[3] );
+		return cme.GetEntityToken( VMA(1), VMA(2), args[3] );
 	case CG_R_INPVS:
 		return re.inPVS( VMA(1), VMA(2) );
 

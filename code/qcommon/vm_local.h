@@ -27,7 +27,7 @@ terms, you may contact in writing id Software LLC, c/o ZeniMax Media Inc.,
 Suite 120, Rockville, Maryland 20850 USA.
 ===========================================================================
 */
-#include "q_shared.h"
+#include "../idlib/q_shared.h"
 #include "qcommon.h"
 
 // Max number of arguments to pass from engine to vm's vmMain function.

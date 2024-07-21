@@ -1575,14 +1575,47 @@ add_executable(stringify code/tools/stringify.c)
 # # CLIENT/SERVER
 # #############################################################################
 
-add_library(botlib OBJECT
-code/botlib/l_memory.c
-code/botlib/l_precomp.c
-code/botlib/l_script.c
-code/botlib/l_struct.c
-)
-target_compile_definitions(botlib PRIVATE BOTLIB)
-target_compile_options(botlib PUBLIC ${SHLIBCFLAGS})
+add_library(idlib OBJECT
+  code/idlib/idlib_main.c
+  code/idlib/l_precomp.c
+  code/idlib/l_script.c
+  code/idlib/l_struct.c
+  code/idlib/q_math.c
+  code/idlib/q_shared.c
+  code/idlib/q_extramath.c
+  code/idlib/q_containers.c
+  code/idlib/surface.c
+  code/idlib/surfacepatch.c
+
+  code/idlib/hashindex.c
+  code/idlib/dict.c
+
+  code/idlib/md4.c
+  code/idlib/md5.c
+
+  code/idlib/bsp/bsp.c
+  code/idlib/bsp/bsp_q3.c
+  code/idlib/bsp/bsp_q3ihv.c
+  code/idlib/bsp/bsp_q3test103.c
+  code/idlib/bsp/bsp_q3test106.c
+  code/idlib/bsp/bsp_fakk.c
+  code/idlib/bsp/bsp_sof2.c
+  code/idlib/bsp/bsp_ef2.c
+  code/idlib/bsp/bsp_mohaa.c
+
+  code/idlib/polylib.c
+
+  code/idlib/mapfile.c
+  )
+target_compile_definitions(idlib PRIVATE IDLIB)
+target_compile_options(idlib PUBLIC ${SHLIBCFLAGS})
+
+add_library("cm1_${SHLIBNAME}" OBJECT
+  code/cm1/cm_load.c
+  code/cm1/cm_patch.c
+  code/cm1/cm_test.c
+  code/cm1/cm_trace.c
+  )
 
 set(Q3OBJ
    code/client/cl_cgame.c
@@ -1596,33 +1629,16 @@ set(Q3OBJ
    code/client/cl_parse.c
    code/client/cl_scrn.c
    code/client/cl_avi.c
-   
-   code/qcommon/bsp.c
-   code/qcommon/bsp_q3.c
-   code/qcommon/bsp_q3ihv.c
-   code/qcommon/bsp_q3test103.c
-   code/qcommon/bsp_q3test106.c
-   code/qcommon/bsp_fakk.c
-   code/qcommon/bsp_sof2.c
-   code/qcommon/bsp_ef2.c
-   code/qcommon/bsp_mohaa.c
-   
-   code/qcommon/cm_load.c
-   code/qcommon/cm_patch.c
-   code/qcommon/cm_polylib.c
-   code/qcommon/cm_test.c
-   code/qcommon/cm_trace.c
-   
+         
    code/qcommon/cmd.c
    code/qcommon/common.c
   code/qcommon/cvar.c
   code/qcommon/files.c
-  code/qcommon/md4.c
-  code/qcommon/md5.c
   code/qcommon/msg.c
   code/qcommon/net_chan.c
   code/qcommon/net_ip.c
   code/qcommon/huffman.c
+  code/qcommon/debugvis.c
   
   code/client/snd_altivec.c
   code/client/snd_adpcm.c
@@ -1652,16 +1668,25 @@ set(Q3OBJ
   code/server/sv_net_chan.c
   code/server/sv_snapshot.c
   code/server/sv_world.c
-  
-  code/qcommon/q_math.c
-  code/qcommon/q_shared.c
+  code/server/sv_clip.c
   
   code/qcommon/unzip.c
   code/qcommon/ioapi.c
   code/qcommon/puff.c
   code/qcommon/vm.c
   code/qcommon/vm_interpreted.c
-  
+
+  code/cm2/cm_main.c
+  code/cm2/cm_contacts.c
+  code/cm2/cm_contents.c
+  code/cm2/cm_debug.c
+  code/cm2/cm_files.c
+  code/cm2/cm_load.c
+  code/cm2/cm_bsp.c
+  code/cm2/cm_rotate.c
+  code/cm2/cm_trace.c
+  code/cm2/cm_translate.c
+
   code/sdl/sdl_input.c
   code/sdl/sdl_snd.c
   
@@ -1719,6 +1744,7 @@ set(Q3R2OBJ
   code/renderergl2/tr_surface.c
   code/renderergl2/tr_vbo.c
   code/renderergl2/tr_world.c
+  code/renderergl2/tr_rendertools.c
  
   code/sdl/sdl_gamma.c
   code/sdl/sdl_glimp.c
@@ -1792,6 +1818,7 @@ set(Q3ROBJ
   code/renderergl1/tr_sky.c
   code/renderergl1/tr_surface.c
   code/renderergl1/tr_world.c
+  code/renderergl1/tr_rendertools.c
  
   code/sdl/sdl_gamma.c
   code/sdl/sdl_glimp.c
@@ -2175,7 +2202,7 @@ if(NOT USE_RENDERER_DLOPEN)
         #$(Q)$(CC) $(CLIENT_CFLAGS) $(CFLAGS) $(CLIENT_LDFLAGS) $(LDFLAGS) $(NOTSHLIBLDFLAGS) \
             #-o $@ $(Q3OBJ) \
             #$(LIBSDLMAIN) $(CLIENT_LIBS) $(LIBS)
-    target_link_libraries("${CLIENTBIN}${FULLBINEXT}" ${SDL2_LIBRARIES} botlib m)
+    target_link_libraries("${CLIENTBIN}${FULLBINEXT}" ${SDL2_LIBRARIES} idlib m)
     if(USE_INTERNAL_ZLIB)
         ADD_LIBRARY("${CLIENTBIN}${FULLBINEXT}" OBJECT ${ZLIB_SRCS})
     else()
@@ -2218,13 +2245,13 @@ if(NOT USE_RENDERER_DLOPEN)
 
 else()
 
-    include_directories("${CLIENTBIN}${FULLBINEXT}" ${SDL2_INCLUDE_DIRS} botlib)
+    include_directories("${CLIENTBIN}${FULLBINEXT}" ${SDL2_INCLUDE_DIRS} idlib)
     add_executable("${CLIENTBIN}${FULLBINEXT}" ${Q3OBJ} ${Q3ROBJ} ${JPEG_SRCS} ${FTOBJ} ${LIBSDLMAIN})
         #$(echo_cmd) "LD $@"
         #$(Q)$(CC) $(CLIENT_CFLAGS) $(CFLAGS) $(CLIENT_LDFLAGS) $(LDFLAGS) $(NOTSHLIBLDFLAGS) \
             #-o $@ $(Q3OBJ) $(Q3ROBJ) $(JPGOBJ) $(FTOBJ) \
             #$(LIBSDLMAIN) $(CLIENT_LIBS) $(RENDERER_LIBS) $(LIBS)
-    target_link_libraries("${CLIENTBIN}${FULLBINEXT}" ${SDL2_LIBRARIES} botlib m)
+    target_link_libraries("${CLIENTBIN}${FULLBINEXT}" ${SDL2_LIBRARIES} idlib m)
     if(USE_INTERNAL_ZLIB)
         ADD_LIBRARY("${CLIENTBIN}${FULLBINEXT}" OBJECT ${ZLIB_SRCS})
     else()
@@ -2244,7 +2271,7 @@ else()
     include_directories("${RENDERER_PREFIX}opengl2_${SHLIBNAME}" ${SDL2_INCLUDE_DIRS})
     add_library("${RENDERER_PREFIX}opengl2_${SHLIBNAME}" SHARED ${Q3OBJ} ${Q3R2OBJ} ${Q3R2STRINGOBJ} ${Q3R2STRINGC} ${JPEG_SRCS} ${FTOBJ} ${LIBSDLMAIN})
     set_target_properties("${RENDERER_PREFIX}opengl2_${SHLIBNAME}" PROPERTIES PREFIX "")
-    target_link_libraries("${RENDERER_PREFIX}opengl2_${SHLIBNAME}" ${SDL2_LIBRARIES} botlib m)
+    target_link_libraries("${RENDERER_PREFIX}opengl2_${SHLIBNAME}" ${SDL2_LIBRARIES} idlib m)
     target_compile_options("${RENDERER_PREFIX}opengl2_${SHLIBNAME}" PUBLIC ${SHLIBCFLAGS})
     target_compile_definitions("${RENDERER_PREFIX}opengl2_${SHLIBNAME}" PRIVATE -DUSE_RENDERER_DLOPEN)
     if(USE_INTERNAL_JPEG)

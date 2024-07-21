@@ -1800,6 +1800,7 @@ void R_RenderView (viewParms_t *parms) {
 	// draw main system development information (surface outlines, etc)
 	R_FogOff();
 	R_DebugGraphics();
+    RB_RenderDebugTools();
 	//RB_FogOn();
 }
 

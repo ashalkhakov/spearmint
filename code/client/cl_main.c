@@ -34,6 +34,7 @@ Suite 120, Rockville, Maryland 20850 USA.
 #include <stddef.h>
 
 #include "../sys/sys_local.h"
+#include "../idlib/idlib_public.h"
 
 #ifdef USE_MUMBLE
 #include "libmumblelink.h"
@@ -1450,7 +1451,7 @@ void CL_ClearMemory(qboolean shutdownRef)
 		// clear the whole hunk
 		Hunk_Clear();
 		// clear collision map data
-		CM_ClearMap();
+		cme.FreeMap();
 		// clear net fields
 		MSG_ShutdownNetFields();
 	}
