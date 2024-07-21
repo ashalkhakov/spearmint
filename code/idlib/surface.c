@@ -57,7 +57,7 @@ Contents are copied using their = operator so that data is correnctly instantiat
 ================
 */
 static ID_INLINE void VertexListResize( surface_t *self, int newsize, int newgranularity ) {
-	drawVert_t *temp;
+	surfVert_t *temp;
 	int		i;
 
 	assert( newsize >= 0 );
@@ -98,7 +98,7 @@ Increases the size of the list by one element and copies the supplied data into 
 Returns the index of the new element.
 ================
 */
-static ID_INLINE int VertexListAppend( surface_t *self, drawVert_t *obj ) {
+static ID_INLINE int VertexListAppend( surface_t *self, surfVert_t *obj ) {
 	if ( !self->verts ) {
 		VertexListResize( self, 16, 16 );
 	}
@@ -155,8 +155,8 @@ int SurfaceSplit( const surface_t *self, const plane_t plane, const float epsilo
 	int				maxOnPlaneEdges;
 	int				i;
 	surface_t *		surface[2];
-	drawVert_t		v;
-	drawVert_t *	verts;
+	surfVert_t		v;
+	surfVert_t *	verts;
 	int *			indexes;
 	vec3_t			dir1, dir2, cross;
 
@@ -515,11 +515,11 @@ qboolean SurfaceClipInPlace( surface_t *self, const plane_t plane, const float e
 	int *			indexPtr;
 	int				indexNum;
 	int				numEdgeSplitVertexes;
-	drawVert_t		v;
-	drawVert_t		*verts;
+	surfVert_t		v;
+	surfVert_t		*verts;
 	int				*indexes;
 	surfaceEdge_t	*edges;
-	drawVert_t		*newVerts;
+	surfVert_t		*newVerts;
 	int				sizeNewVerts, numNewVerts;
 	int				*newIndexes;
 	int				sizeNewIndexes, numNewIndexes;
@@ -583,7 +583,7 @@ qboolean SurfaceClipInPlace( surface_t *self, const plane_t plane, const float e
 
 	sizeNewVerts = self->numVerts;
 	numNewVerts = 0;
-	newVerts = ( drawVert_t * )ii.GetMemory( sizeNewVerts * sizeof( *newVerts ) );
+	newVerts = ( surfVert_t * )ii.GetMemory( sizeNewVerts * sizeof( *newVerts ) );
 
 	// split edges
 	for ( i = 0; i < self->numEdges; i++ ) {
@@ -1010,6 +1010,20 @@ qboolean SurfaceRayIntersection( const surface_t *self, const vec3_t start, cons
 	return qfalse;
 }
 
+static void AppendEdge( surface_t *self, surfaceEdge_t *e ) {
+    if ( self->numEdges == self->sizeEdges ) {
+        self->sizeEdges = self->sizeEdges > 0 ? self->sizeEdges * 1.5 : 16;
+        surfaceEdge_t *newEdges = ii.GetMemory( self->sizeEdges * sizeof( *newEdges ) );
+        if ( self->edges ) {
+            memcpy( newEdges, self->edges, self->numEdges * sizeof( *newEdges ) );
+            ii.FreeMemory( self->edges );
+        }
+        self->edges = newEdges;
+    }
+
+	self->edges[self->numEdges++] = *e;
+}
+
 /*
 =================
 SurfaceGenerateEdgeIndexes
@@ -1021,14 +1035,17 @@ void SurfaceGenerateEdgeIndexes( surface_t *self ) {
 	int i, j, i0, i1, i2, s, v0, v1, edgeNum;
 	int *index, *vertexEdges, *edgeChain;
 	surfaceEdge_t e[3];
+    int maxEdges;
 
 	vertexEdges = (int *) ii.GetMemory( self->numVerts * sizeof( int ) );
 	memset( vertexEdges, -1, self->numVerts * sizeof( int ) );
 	edgeChain = (int *) ii.GetMemory( self->numIndexes * sizeof( int ) );
 
 	self->numEdgeIndexes = self->numIndexes;
-	if ( self->sizeEdgeIndexes > 0 && self->sizeEdgeIndexes < self->numIndexes ) {
-		ii.FreeMemory( self->edgeIndexes );
+	if ( self->sizeEdgeIndexes < self->numIndexes ) {
+        if ( self->edgeIndexes ) {
+		    ii.FreeMemory( self->edgeIndexes );
+        }
 		self->edgeIndexes = ii.GetMemory( self->numEdgeIndexes * sizeof( int ) );
 	}
 
@@ -1036,7 +1053,7 @@ void SurfaceGenerateEdgeIndexes( surface_t *self ) {
 
 	// the first edge is a dummy
 	e[0].verts[0] = e[0].verts[1] = e[0].tris[0] = e[0].tris[1] = 0;
-	self->edges[self->numEdges++] = e[0];
+    AppendEdge( self, &e[0] );
 
 	for ( i = 0; i < self->numIndexes; i += 3 ) {
 		index = self->indexes + i;
@@ -1067,7 +1084,7 @@ void SurfaceGenerateEdgeIndexes( surface_t *self ) {
 			if ( edgeNum < 0 ) {
 				e[j].tris[0] = e[j].tris[1] = -1;
 				edgeNum = self->numEdges;
-				self->edges[self->numEdges++] = e[j];
+                AppendEdge( self, &e[j] );
 				edgeChain[edgeNum] = vertexEdges[v0];
 				vertexEdges[v0] = edgeNum;
 			}

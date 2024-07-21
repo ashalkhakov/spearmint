@@ -79,7 +79,7 @@ static ID_INLINE void SurfacePatchInitWithSize( surfacePatch_t *self, int maxPat
 	self->maxWidth = maxPatchWidth;
 	self->maxHeight = maxPatchHeight;
 	self->surf.sizeVerts = self->surf.numVerts = self->maxWidth * self->maxHeight;
-	self->surf.verts = ( drawVert_t * )GetMemory( self->surf.sizeVerts );
+	self->surf.verts = ( surfVert_t * )ii.GetMemory( sizeof( surfVert_t ) * self->surf.sizeVerts );
 	self->expanded = qfalse;
 }
 

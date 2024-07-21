@@ -128,6 +128,189 @@ static ID_INLINE unsigned int StringCRC( const char *str ) {
 	return crc;
 }
 
+
+/*
+=================
+ParseMapPatch
+=================
+*/
+mapPrimitive_t *ParseMapPatch( source_t *src, const vec3_t origin, qboolean patchDef3, float version ) {
+    char        key[MAX_TOKEN];
+	float		info[7];
+	surfVert_t  *vert;
+	token_t		token;
+	int			i, j;
+	mapPrimitive_t *patch;
+
+	if ( !PC_ExpectTokenString( src, "{" ) ) {
+		return NULL;
+	}
+
+	// read the material (we had an implicit 'textures/' in the old format...)
+	if ( !PC_ReadToken( src, &token ) ) {
+		SourceError( src, "ParseMapPatch: unexpected EOF" );
+		return NULL;
+	}
+
+	// Parse it
+	if ( patchDef3 ) {
+		if ( !PC_Parse1DMatrix( src, 7, info ) ) {
+			SourceError( src, "ParseMapPatch: unable to Parse patchDef3 info" );
+			return NULL;
+		}
+	} else {
+		if ( !PC_Parse1DMatrix( src, 5, info ) ) {
+			SourceError( src, "ParseMapPatch: unable to parse patchDef2 info" );
+			return NULL;
+		}
+	}
+
+    patch = ( mapPrimitive_t * )ii.GetMemory( sizeof( *patch ) );
+
+    MapPatchInitWithSize( patch, info[0], info[1] );
+    SurfacePatchSetSize( &patch->patch, info[0], info[1] );
+    // we had an implicit 'textures/' in the old format...
+    if ( version < 2.0f ) {
+        Q_strncpyz( patch->material, "textures/", sizeof( patch->material ) );
+        Q_strcat( patch->material, sizeof( patch->material ), token.string );
+    } else {
+        Q_strncpyz( patch->material, token.string, sizeof( patch->material ) );
+    }
+
+	if ( patchDef3 ) {
+		patch->horzSubdivisions = info[2];
+		patch->vertSubdivisions = info[3];
+		patch->explicitSubdivisions = qtrue;
+	}
+
+	if ( SurfacePatchGetWidth( &patch->patch ) < 0 || SurfacePatchGetHeight( &patch->patch ) < 0 ) {
+		SourceError( src, "ParseMapPatch: bad size" );
+        FreeMapPatch( patch );
+        ii.FreeMemory( patch );
+		return NULL;
+	}
+
+	// these were written out in the wrong order, IMHO
+	if ( !PC_ExpectTokenString( src, "(" ) ) {
+		SourceError( src, "ParseMapPatch: bad patch vertex data" );
+        FreeMapPatch( patch );
+		ii.FreeMemory( patch );
+		return NULL;
+	}
+	for ( j = 0; j < SurfacePatchGetWidth( &patch->patch ); j++ ) {
+		if ( !PC_ExpectTokenString( src, "(" ) ) {
+			SourceError( src, "ParseMapPatch: bad vertex row data" );
+            FreeMapPatch( patch );
+			ii.FreeMemory( patch );
+			return NULL;
+		}
+		for ( i = 0; i < SurfacePatchGetHeight( &patch->patch ); i++ ) {
+			float v[5];
+
+			if ( !PC_Parse1DMatrix( src, 5, v ) ) {
+				SourceError( src, "ParseMapPatch: bad vertex column data" );
+				FreeMapPatch( patch );
+                ii.FreeMemory( patch );
+				return NULL;
+			}
+
+			vert = SurfaceGetVertex( &patch->patch.surf, i * SurfacePatchGetWidth( &patch->patch ) + j );
+			vert->xyz[0] = v[0] - origin[0];
+			vert->xyz[1] = v[1] - origin[1];
+			vert->xyz[2] = v[2] - origin[2];
+			vert->st[0] = v[3];
+			vert->st[1] = v[4];
+		}
+		if ( !PC_ExpectTokenString( src, ")" ) ) {
+            FreeMapPatch( patch );
+			ii.FreeMemory( patch );
+			SourceError( src, "ParseMapPatch: unable to parse patch control points" );
+			return NULL;
+		}
+	}
+	if ( !PC_ExpectTokenString( src, ")" ) ) {
+		SourceError( src, "ParseMapPatch: unable to parse patch control points, no closure" );
+        FreeMapPatch( patch );
+		ii.FreeMemory( patch );
+		return NULL;
+	}
+
+	// read any key/value pairs
+	while( PC_ReadToken( src, &token ) ) {
+		if ( !strcmp( token.string, "}" ) ) {
+			PC_ExpectTokenString( src, "}" );
+			break;
+		}
+		if ( token.type == TT_STRING ) {
+            Q_strncpyz( key, token.string, sizeof( key ) );
+			PC_ExpectTokenType( src, TT_STRING, 0, &token );
+			DictSet( &patch->epairs, key, token.string );
+		}
+	}
+
+	return patch;
+}
+
+/*
+============
+MapPatchWrite
+============
+*/
+qboolean MapPatchWrite( const mapPrimitive_t *p, fileHandle_t fp, int primitiveNum, const vec3_t origin ) {
+	int i, j;
+	const surfVert_t *v;
+
+	if ( p->explicitSubdivisions ) {
+		FS_WriteFloatString( fp, "// primitive %d\n{\n patchDef3\n {\n", primitiveNum );
+		FS_WriteFloatString( fp, "  \"%s\"\n  ( %d %d %d %d 0 0 0 )\n", p->material, p->patch.width, p->patch.height, p->horzSubdivisions, p->vertSubdivisions );
+	} else {
+		FS_WriteFloatString( fp, "// primitive %d\n{\n patchDef2\n {\n", primitiveNum );
+		FS_WriteFloatString( fp, "  \"%s\"\n  ( %d %d 0 0 0 )\n", p->material, p->patch.width, p->patch.height );
+	}
+
+	FS_WriteFloatString( fp, "  (\n" );
+	for ( i = 0; i < p->patch.width; i++ ) {
+		FS_WriteFloatString( fp, "   ( " );
+		for ( j = 0; j < p->patch.height; j++ ) {
+            v = SurfaceGetVertex( &p->patch.surf, j * p->patch.width + i );
+
+			FS_WriteFloatString( fp, " ( %f %f %f %f %f )", v->xyz[0] + origin[0],
+								v->xyz[1] + origin[1], v->xyz[2] + origin[2], v->st[0], v->st[1] );
+		}
+		FS_WriteFloatString( fp, " )\n" );
+	}
+	FS_WriteFloatString( fp, "  )\n }\n}\n" );
+
+	return qtrue;
+}
+
+/*
+===============
+GetMapPatchGeometryCRC
+===============
+*/
+unsigned int GetMapPatchGeometryCRC( const mapPrimitive_t *p ) {
+	int i, j;
+	unsigned int crc;
+    surfVert_t *v;
+
+	crc = p->horzSubdivisions ^ p->vertSubdivisions;
+	for ( i = 0; i < p->patch.width; i++ ) {
+		for ( j = 0; j < p->patch.height; j++ ) {
+            v = SurfaceGetVertex( &p->patch.surf, j * p->patch.width + i );
+
+			crc ^= FloatCRC( v->xyz[0] );
+			crc ^= FloatCRC( v->xyz[1] );
+			crc ^= FloatCRC( v->xyz[2] );
+		}
+	}
+
+	crc ^= StringCRC( p->material );
+
+	return crc;
+}
+
+
 /*
 =================
 ParseMapBrush
@@ -426,7 +609,7 @@ ParseMapEntity
 mapEntity_t *ParseMapEntity( source_t *src, qboolean worldSpawn, float version ) {
 	token_t	token;
 	mapEntity_t *mapEnt;
-	//idMapPatch *mapPatch;
+	mapPrimitive_t *mapPatch;
 	mapPrimitive_t *mapBrush;
 	qboolean worldent;
 	vec3_t origin;
@@ -476,14 +659,13 @@ mapEntity_t *ParseMapEntity( source_t *src, qboolean worldSpawn, float version )
                 AddPrimitiveToMapEntity( mapEnt, mapBrush );
 			}
 			// if is it a patch: patchDef2, patchDef3
-			// TODO: make this work
-			/*else if ( token.Icmpn( "patch", 5 ) == 0 ) {
-				mapPatch = idMapPatch::Parse( src, origin, !token.Icmp( "patchDef3" ), version );
+			else if ( Q_stricmpn( token.string, "patch", 5 ) == 0 ) {
+				mapPatch = ParseMapPatch( src, origin, !( Q_stricmp( token.string, "patchDef3" ) ), version );
 				if ( !mapPatch ) {
 					return NULL;
 				}
-				mapEnt->AddPrimitive( mapPatch );
-			}*/
+				AddPrimitiveToMapEntity( mapEnt, mapPatch );
+			}
 			// assume it's a brush in Q3 or older style
 			else {
 				PC_UnreadToken( src, &token );
@@ -556,10 +738,9 @@ qboolean MapEntityWrite( const mapEntity_t *e, fileHandle_t fp, int entityNum ) 
 			case PRIMTYPE_BRUSH:
                 MapBrushWrite( mapPrim, fp, i, origin );
 				break;
-			// TODO: add
-			//case idMapPrimitive::TYPE_PATCH:
-			//	static_cast<idMapPatch*>(mapPrim)->Write( fp, i, origin );
-			//  break;
+			case PRIMTYPE_PATCH:
+                MapPatchWrite( mapPrim, fp, i, origin );
+                break;
 			case PRIMTYPE_INVALID:
 				break;
 		}
@@ -589,7 +770,7 @@ void RemoveMapEntityPrimitiveData( mapEntity_t *e ) {
                 FreeMapBrush( p );
                 break;
             case PRIMTYPE_PATCH:
-				// TODO: add
+				FreeMapPatch( p );
                 break;
 			case PRIMTYPE_INVALID:
 				break;
@@ -620,10 +801,9 @@ unsigned int GetMapEntityGeometryCRC( const mapEntity_t *e ) {
 			case PRIMTYPE_BRUSH:
 				crc ^= GetMapBrushGeometryCRC( mapPrim );
 				break;
-			// TODO: add
-			//case idMapPrimitive::TYPE_PATCH:
-			//	crc ^= static_cast<idMapPatch*>(mapPrim)->GetGeometryCRC();
-			//	break;
+			case PRIMTYPE_PATCH:
+				crc ^= GetMapPatchGeometryCRC( mapPrim );
+				break;
 			case PRIMTYPE_INVALID:
 				break;
 		}
@@ -715,8 +895,7 @@ qboolean ParseMapFileFromSource( mapFile_t *m, source_t *src ) {
 							break;
                         }
 						case PRIMTYPE_PATCH: {
-							// TODO: add
-						//	static_cast<idMapPatch *>(mapPrimitive)->SetMaterial( material );
+                            Q_strncpyz( mapPrimitive->material, material, sizeof( mapPrimitive->material ) );
 							break;
 						}
 						case PRIMTYPE_INVALID:

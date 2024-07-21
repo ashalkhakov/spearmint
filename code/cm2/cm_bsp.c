@@ -41,6 +41,8 @@ Suite 120, Rockville, Maryland 20850 USA.
 #define	BOX_LEAFS		2
 #define	BOX_PLANES		12
 
+#define MAX_PATCH_VERTS 1024
+
 #if 1 // ZTM: FIXME: BSP is already swapped by BSP_Load, but removing these probably makes merging ioq3 changes harder...
 #undef LittleShort
 #define LittleShort
@@ -627,6 +629,42 @@ static mapPrimitive_t *MapBrushInitFromBspBrush( const bspFile_t *bsp, dbrush_t 
     return out;
 }
 
+static mapPrimitive_t *MapPatchInitFromBspPatch( const bspFile_t *bsp, dsurface_t *in ) {
+    mapPrimitive_t *out;
+    dshader_t *shader;
+    drawVert_t *dv;
+    surfVert_t *outVert;
+    int c, j;
+
+    assert( in->surfaceType == MST_PATCH );
+
+    out = ( mapPrimitive_t * )ii.GetMemory( sizeof( *out ) );
+    MapPatchInitWithSize( out, in->patchWidth, in->patchHeight );
+    SurfacePatchSetSize( &out->patch, in->patchWidth, in->patchHeight );
+
+    // load the full drawverts onto the stack
+    c = in->patchWidth * in->patchHeight;
+    if ( c > MAX_PATCH_VERTS ) {
+        ii.Com_Error( ERR_DROP, "ParseMesh: MAX_PATCH_VERTS" );
+    }
+
+    dv = bsp->drawVerts + in->firstVert;
+    outVert = out->patch.surf.verts;
+    for ( j = 0 ; j < c ; j++, dv++, outVert++ ) {
+        VectorCopy( dv->xyz, outVert->xyz );
+        VectorCopy( dv->normal, outVert->normal );
+    }
+
+    shader = &bsp->shaders[in->shaderNum];
+    Q_strncpyz( out->material, shader->shader, sizeof( out->material ) );
+
+    out->vertSubdivisions = in->subdivisions;
+    out->horzSubdivisions = in->subdivisions;
+    out->explicitSubdivisions = qfalse;
+
+    return out;
+}
+
 void TransferSubModelToMapEntity( const bspFile_t *bsp, dmodel_t *model, mapEntity_t *entity, int modelindex ) {
     int i, j;
     dbrush_t *brush;
@@ -634,6 +672,7 @@ void TransferSubModelToMapEntity( const bspFile_t *bsp, dmodel_t *model, mapEnti
     dshader_t *shader;
     dplane_t *plane;
     mapPrimitive_t *outBrush;
+    mapPrimitive_t *outPatch;
     mapBrushSide_t *outBrushSide;
     char            modelName[MAX_QPATH];
 
@@ -653,12 +692,16 @@ void TransferSubModelToMapEntity( const bspFile_t *bsp, dmodel_t *model, mapEnti
 
     for ( i = model->numSurfaces - 1; i >= model->firstSurface; i-- ) {
         dsurface_t *surf = &bsp->surfaces[i];
-        if ( surf->surfaceType != MST_TRIANGLE_SOUP && surf->surfaceType != MST_TERRAIN ) {
+        if ( surf->surfaceType != MST_PATCH ) {
             continue;
         }
-        // TODO: transfer patches
-        // TODO: transfer triangle soups as render models
+
+        outPatch = MapPatchInitFromBspPatch( bsp, surf );
+
+        AddPrimitiveToMapEntity( entity, outPatch );
     }
+
+    // TODO: transfer terrains & triangle soups as render models
 }
 
 /*

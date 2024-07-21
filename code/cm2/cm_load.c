@@ -2650,68 +2650,85 @@ void PolygonFromWinding( cm_model_t *model, fixedWinding_t *w, const plane_t pla
 =================
 CreatePatchPolygons
 =================
-*//*
-// TODO: PATCHES
-void CreatePatchPolygons( cm_model_t *model, idSurface_Patch &mesh, const idMaterial *material, int primitiveNum ) {
+*/
+void CreatePatchPolygons( cm_model_t *model, surfacePatch_t *mesh, const qhandle_t material, int primitiveNum ) {
 	int i, j;
 	float dot;
 	int v1, v2, v3, v4;
-	idFixedWinding w;
-	idPlane plane;
-	idVec3 d1, d2;
+    surfVert_t *sv1, *sv2, *sv3, *sv4;
+	fixedWinding_t w;
+	plane_t plane;
+	vec3_t d1, d2;
+    vec5_t tmp;
 
-	for ( i = 0; i < mesh.GetWidth() - 1; i++ ) {
-		for ( j = 0; j < mesh.GetHeight() - 1; j++ ) {
+    tmp[3] = tmp[4] = 0.0f;
 
-			v1 = j * mesh.GetWidth() + i;
+	for ( i = 0; i < mesh->width - 1; i++ ) {
+		for ( j = 0; j < mesh->height - 1; j++ ) {
+
+			v1 = j * mesh->width + i;
+            sv1 = SurfaceGetVertex( &mesh->surf, v1 );
 			v2 = v1 + 1;
-			v3 = v1 + mesh.GetWidth() + 1;
-			v4 = v1 + mesh.GetWidth();
+            sv2 = SurfaceGetVertex( &mesh->surf, v2 );
+			v3 = v1 + mesh->width + 1;
+            sv3 = SurfaceGetVertex( &mesh->surf, v3 );
+			v4 = v1 + mesh->width;
+            sv4 = SurfaceGetVertex( &mesh->surf, v4 );
 
-			d1 = mesh[v2].xyz - mesh[v1].xyz;
-			d2 = mesh[v3].xyz - mesh[v1].xyz;
-			plane.SetNormal( d1.Cross(d2) );
-			if ( plane.Normalize() != 0.0f ) {
-				plane.FitThroughPoint( mesh[v1].xyz );
-				dot = plane.Distance( mesh[v4].xyz );
+			VectorSubtract( sv2->xyz, sv1->xyz, d1 );
+			VectorSubtract( sv3->xyz, sv1->xyz, d2 );
+            CrossProduct( d1, d2, plane );
+			if ( VectorNormalize( plane ) != 0.0f ) {
+				PlaneFitThroughPoint( plane, sv1->xyz );
+				dot = PlaneDistance( plane, sv4->xyz );
 				// if we can turn it into a quad
-				if ( idMath::Fabs(dot) < 0.1f ) {
-					w.Clear();
-					w += mesh[v1].xyz;
-					w += mesh[v2].xyz;
-					w += mesh[v3].xyz;
-					w += mesh[v4].xyz;
+				if ( fabs(dot) < 0.1f ) {
+					ClearFixedWinding( &w );
+                    VectorCopy( sv1->xyz, tmp );
+                    AddPointToFixedWinding( &w, tmp );
+                    VectorCopy( sv2->xyz, tmp );
+                    AddPointToFixedWinding( &w, tmp );
+                    VectorCopy( sv3->xyz, tmp );
+                    AddPointToFixedWinding( &w, tmp );
+                    VectorCopy( sv4->xyz, tmp );
+                    AddPointToFixedWinding( &w, tmp );
 
 					PolygonFromWinding( model, &w, plane, material, -primitiveNum );
 					continue;
 				}
 				else {
 					// create one of the triangles
-					w.Clear();
-					w += mesh[v1].xyz;
-					w += mesh[v2].xyz;
-					w += mesh[v3].xyz;
+					ClearFixedWinding( &w );
+                    VectorCopy( sv1->xyz, tmp );
+                    AddPointToFixedWinding( &w, tmp );
+                    VectorCopy( sv2->xyz, tmp );
+                    AddPointToFixedWinding( &w, tmp );
+                    VectorCopy( sv3->xyz, tmp );
+                    AddPointToFixedWinding( &w, tmp );
 
 					PolygonFromWinding( model, &w, plane, material, -primitiveNum );
 				}
 			}
 			// create the other triangle
-			d1 = mesh[v3].xyz - mesh[v1].xyz;
-			d2 = mesh[v4].xyz - mesh[v1].xyz;
-			plane.SetNormal( d1.Cross(d2) );
-			if ( plane.Normalize() != 0.0f ) {
-				plane.FitThroughPoint( mesh[v1].xyz );
+            VectorSubtract( sv3->xyz, sv1->xyz, d1 );
+            VectorSubtract( sv4->xyz, sv1->xyz, d2 );
+            CrossProduct( d1, d2, plane );
+			if ( VectorNormalize( plane ) != 0.0f ) {
+				PlaneFitThroughPoint( plane, sv1->xyz );
 
-				w.Clear();
-				w += mesh[v1].xyz;
-				w += mesh[v3].xyz;
-				w += mesh[v4].xyz;
+				ClearFixedWinding( &w );
+                VectorCopy( sv1->xyz, tmp );
+                AddPointToFixedWinding( &w, tmp );
+                VectorCopy( sv3->xyz, tmp );
+                AddPointToFixedWinding( &w, tmp );
+                VectorCopy( sv4->xyz, tmp );
+                AddPointToFixedWinding( &w, tmp );
 
 				PolygonFromWinding( model, &w, plane, material, -primitiveNum );
 			}
 		}
 	}
-}*/
+}
 
 /*
 =================
@@ -2728,11 +2745,10 @@ static void CM_EstimateVertsAndEdges( const mapEntity_t *mapEnt, int *numVerts, 
 	while ( mapPrim ) {
 		if ( mapPrim->type == PRIMTYPE_PATCH ) {
 			// assume maximum tesselation without adding verts
-			// TODO: patches
-			//width = static_cast<const idMapPatch*>(mapPrim)->GetWidth();
-			//height = static_cast<const idMapPatch*>(mapPrim)->GetHeight();
-			//*numVerts += width * height;
-			//*numEdges += (width-1) * height + width * (height-1) + (width-1) * (height-1);
+			width = mapPrim->patch.width;
+			height = mapPrim->patch.height;
+			*numVerts += width * height;
+			*numEdges += (width-1) * height + width * (height-1) + (width-1) * (height-1);
 		}
 		if ( mapPrim->type == PRIMTYPE_BRUSH ) {
 			// assume cylinder with a polygon with (numSides - 2) edges ontop and on the bottom
@@ -2746,34 +2762,36 @@ static void CM_EstimateVertsAndEdges( const mapEntity_t *mapEnt, int *numVerts, 
 
 /*
 =================
-idCollisionModelManagerLocal::ConverPatch
+ConvertPatch
 =================
-*//*
-// TODO: patches
-void idCollisionModelManagerLocal::ConvertPatch( cm_model_t *model, const idMapPatch *patch, int primitiveNum ) {
-	const idMaterial *material;
-	idSurface_Patch *cp;
+*/
+void ConvertPatch( cm_model_t *model, const mapPrimitive_t *patch, int primitiveNum ) {
+	qhandle_t material;
+	surfacePatch_t *cp;
 
-	material = declManager->FindMaterial( patch->GetMaterial() );
-	if ( !( material->GetContentFlags() & CONTENTS_REMOVE_UTIL ) ) {
+	material = CM_FindMaterial( patch->material );
+    // TODO: implement this?
+	/*if ( !( material->GetContentFlags() & CONTENTS_REMOVE_UTIL ) ) {
 		return;
-	}
+	}*/
 
 	// copy the patch
-	cp = new idSurface_Patch( *patch );
+    cp = ( surfacePatch_t * )ii.GetMemory( sizeof( *cp ) );
+    SurfacePatchInitFromPatch( cp, &patch->patch );
 
 	// if the patch has an explicit number of subdivisions use it to avoid cracks
-	if ( patch->GetExplicitlySubdivided() ) {
-		cp->SubdivideExplicit( patch->GetHorzSubdivisions(), patch->GetVertSubdivisions(), false, true );
+	if ( patch->explicitSubdivisions ) {
+        SurfacePatchSubdivideExplicit( cp, patch->horzSubdivisions, patch->vertSubdivisions, qfalse, qtrue );
 	} else {
-		cp->Subdivide( DEFAULT_CURVE_MAX_ERROR_CD, DEFAULT_CURVE_MAX_ERROR_CD, DEFAULT_CURVE_MAX_LENGTH_CD, false );
+        SurfacePatchSubdivide( cp, DEFAULT_CURVE_MAX_ERROR_CD, DEFAULT_CURVE_MAX_ERROR_CD, DEFAULT_CURVE_MAX_LENGTH_CD, qfalse );
 	}
 
 	// create collision polygons for the patch
-	CreatePatchPolygons( model, *cp, material, primitiveNum );
+	CreatePatchPolygons( model, cp, material, primitiveNum );
 
-	delete cp;
-}*/
+	SurfacePatchFree( cp );
+    ii.FreeMemory( cp );
+}
 
 /*
 ================
@@ -3316,8 +3334,7 @@ cm_model_t *CM_CollisionModelForMapEntity( const mapEntity_t *mapEnt ) {
 	// create polygons from patches and brushes
 	for ( i = 0, mapPrim = mapEnt->primitives; mapPrim; i++, mapPrim = mapPrim->next ) {
 		if ( mapPrim->type == PRIMTYPE_PATCH ) {
-			// TODO: patches
-			//ConvertPatch( model, static_cast<idMapPatch*>(mapPrim), i );
+			ConvertPatch( model, mapPrim, i );
 		}
 		if ( mapPrim->type == PRIMTYPE_BRUSH ) {
 			ConvertBrushSides( model, mapPrim, i );

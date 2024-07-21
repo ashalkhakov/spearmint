@@ -39,28 +39,28 @@ If you have questions concerning this license or the applicable additional terms
 ===============================================================================
 */
 
-typedef struct drawVert_s {
+typedef struct surfVert_s {
 	vec3_t			xyz;
 	vec2_t			st;
 	vec3_t			normal;
 	vec3_t			tangents[2];
 	byte			color[4];
-} drawVert_t;
+} surfVert_t;
 
-static ID_INLINE float DrawVertGetIndex( const drawVert_t *self, const int index) {
+static ID_INLINE float DrawVertGetIndex( const surfVert_t *self, const int index) {
 	assert(index >= 0 && index < 5);
 	return ((float*)(&self->xyz))[index];
 }
-static ID_INLINE float *DrawVertGetIndexRef( const drawVert_t *self, const int index ) {
+static ID_INLINE float *DrawVertGetIndexRef( const surfVert_t *self, const int index ) {
 	assert(index >= 0 && index < 5);
 	return &((float*)(&self->xyz))[index];
 }
 
-static ID_INLINE void DrawVertClear( drawVert_t *self ) {
+static ID_INLINE void DrawVertClear( surfVert_t *self ) {
 	memset( self, 0, sizeof( *self ) );
 }
 
-static ID_INLINE void DrawVertLerp( drawVert_t *self, const drawVert_t *a, const drawVert_t *b, const float f ) {
+static ID_INLINE void DrawVertLerp( surfVert_t *self, const surfVert_t *a, const surfVert_t *b, const float f ) {
 	self->xyz[0] = a->xyz[0] + f * ( b->xyz[0] - a->xyz[0] );
 	self->xyz[1] = a->xyz[1] + f * ( b->xyz[1] - a->xyz[1] );
 	self->xyz[2] = a->xyz[2] + f * ( b->xyz[2] - a->xyz[2] );
@@ -69,7 +69,7 @@ static ID_INLINE void DrawVertLerp( drawVert_t *self, const drawVert_t *a, const
 	self->st[1] = a->st[1] + f * ( b->st[1] - a->st[1] );
 }
 
-static ID_INLINE void DrawVertLerpAll( drawVert_t *self, const drawVert_t *a, const drawVert_t *b, const float f ) {
+static ID_INLINE void DrawVertLerpAll( surfVert_t *self, const surfVert_t *a, const surfVert_t *b, const float f ) {
 	int i;
 
 	DrawVertLerp( self, a, b, f );
@@ -90,7 +90,7 @@ static ID_INLINE void DrawVertLerpAll( drawVert_t *self, const drawVert_t *a, co
 DrawVertNormalize
 =============
 */
-static ID_INLINE void DrawVertNormalize( drawVert_t *self ) {
+static ID_INLINE void DrawVertNormalize( surfVert_t *self ) {
 	VectorNormalize( self->normal );
 	CrossProduct( self->tangents[1], self->normal, self->tangents[0] );
 	VectorNormalize( self->tangents[1] );
@@ -98,11 +98,11 @@ static ID_INLINE void DrawVertNormalize( drawVert_t *self ) {
 	VectorNormalize( self->tangents[0] );
 }
 
-static ID_INLINE void DrawVertSetColor( drawVert_t *self, unsigned int color ) {
+static ID_INLINE void DrawVertSetColor( surfVert_t *self, unsigned int color ) {
 	*( unsigned int * )( self->color ) = color;
 }
 
-static ID_INLINE unsigned long DrawVertGetColor( const drawVert_t *self ) {
+static ID_INLINE unsigned long DrawVertGetColor( const surfVert_t *self ) {
 	return *( const unsigned int * )( self->color );
 }
 

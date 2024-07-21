@@ -51,7 +51,7 @@ typedef struct surfaceEdge_s {
 typedef struct surface_s {
 	// vertices
 	int						numVerts, sizeVerts;
-	drawVert_t				*verts;
+	surfVert_t				*verts;
 	// 3 references to vertices for each triangle
 	int						numIndexes, sizeIndexes;
 	int						*indexes;
@@ -103,12 +103,12 @@ static ID_INLINE void SurfaceInit( surface_t *self ) {
 SurfaceInitFromVertexesAndIndexes
 =================
 */
-static ID_INLINE void SurfaceInitFromVertsAndIndexes( surface_t *self, const drawVert_t *verts, const int numVerts, const int *indexes, const int numIndexes ) {
+static ID_INLINE void SurfaceInitFromVertsAndIndexes( surface_t *self, const surfVert_t *verts, const int numVerts, const int *indexes, const int numIndexes ) {
 	assert( verts != NULL && indexes != NULL && numVerts > 0 && numIndexes > 0 );
 
 	SurfaceInit( self );
 
-	self->verts = ( drawVert_t * )ii.GetMemory( sizeof( *self->verts ) * numVerts );
+	self->verts = ( surfVert_t * )ii.GetMemory( sizeof( *self->verts ) * numVerts );
 	self->numVerts = self->sizeVerts = numVerts;
 	for ( int i = 0; i < self->numVerts; i++ ) {
 		self->verts[i] = verts[i];
@@ -129,23 +129,29 @@ SurfaceInitFromSurface
 static ID_INLINE void SurfaceInitFromSurface( surface_t *self, const surface_t *surf ) {
 	SurfaceInit( self );
 	
-	self->verts = ( drawVert_t * )ii.GetMemory( sizeof( *self->verts ) * surf->numVerts );
+	self->verts = ( surfVert_t * )ii.GetMemory( sizeof( *self->verts ) * surf->numVerts );
 	self->numVerts = self->sizeVerts = surf->numVerts;
 	for ( int i = 0; i < self->numVerts; i++ ) {
 		self->verts[i] = surf->verts[i];
 	}
 
-	self->indexes = ( int * )ii.GetMemory( sizeof( *self->indexes ) * surf->numIndexes );
-	self->numIndexes = self->sizeIndexes = surf->numIndexes;
-	memcpy( self->indexes, surf->indexes, self->numIndexes * sizeof( self->indexes[0] ) );
+    if ( surf->indexes ) {
+        self->indexes = ( int * )ii.GetMemory( sizeof( *self->indexes ) * surf->numIndexes );
+        self->numIndexes = self->sizeIndexes = surf->numIndexes;
+        memcpy( self->indexes, surf->indexes, self->numIndexes * sizeof( self->indexes[0] ) );
+    }
 
-	self->edges = ( surfaceEdge_t * )ii.GetMemory( sizeof( *self->edges ) * surf->numEdges );
-	self->numEdges = self->sizeEdges = surf->numEdges;
-	memcpy( self->edges, surf->edges, self->numEdges * sizeof( self->edges[0] ) );
+    if ( surf->edges ) {
+        self->edges = ( surfaceEdge_t * )ii.GetMemory( sizeof( *self->edges ) * surf->numEdges );
+        self->numEdges = self->sizeEdges = surf->numEdges;
+        memcpy( self->edges, surf->edges, self->numEdges * sizeof( self->edges[0] ) );
+    }
 
-	self->edgeIndexes = ( int * )ii.GetMemory( sizeof( *self->edgeIndexes ) * surf->numEdgeIndexes );
-	self->numEdgeIndexes = self->sizeEdgeIndexes = surf->numEdgeIndexes;
-	memcpy( self->edgeIndexes, surf->edgeIndexes, self->numEdgeIndexes * sizeof( self->edgeIndexes[0] ) );
+    if ( surf->edgeIndexes ) {
+        self->edgeIndexes = ( int * )ii.GetMemory( sizeof( *self->edgeIndexes ) * surf->numEdgeIndexes );
+        self->numEdgeIndexes = self->sizeEdgeIndexes = surf->numEdgeIndexes;
+        memcpy( self->edgeIndexes, surf->edgeIndexes, self->numEdgeIndexes * sizeof( self->edgeIndexes[0] ) );
+    }
 }
 
 /*
@@ -184,7 +190,7 @@ static ID_INLINE void SurfaceFree( surface_t *surf ) {
 SurfaceGetVertex
 =================
 */
-static ID_INLINE drawVert_t *SurfaceGetVertex( surface_t *self, const int index ) {
+static ID_INLINE surfVert_t *SurfaceGetVertex( surface_t *self, const int index ) {
 	assert( index >= 0 && index < self->numVerts );
 	return &self->verts[ index ];
 }
@@ -221,7 +227,7 @@ static ID_INLINE int SurfaceGetNumVertices( const surface_t *self ) {
 SurfaceGetVertices
 =================
 */
-static ID_INLINE const drawVert_t *SurfaceGetVertices( const surface_t *self ) {
+static ID_INLINE const surfVert_t *SurfaceGetVertices( const surface_t *self ) {
 	return self->verts;
 }
 
@@ -257,7 +263,7 @@ ID_INLINE void SurfaceConcatenate( surface_t *self, const surface_t *surf ) {
 	// merge verts where possible ?
 	if ( surf->numVerts + n > self->sizeVerts ) {
 		int newSizeVerts = self->sizeVerts + surf->numVerts;
-		drawVert_t *newVerts = ( drawVert_t * )ii.GetMemory( sizeof( *newVerts ) * newSizeVerts );
+		surfVert_t *newVerts = ( surfVert_t * )ii.GetMemory( sizeof( *newVerts ) * newSizeVerts );
 
 		memcpy( newVerts, self->verts, sizeof( *newVerts ) * self->numVerts );
 		ii.FreeMemory( self->verts );
@@ -302,7 +308,7 @@ SurfaceSwapTriangles
 #define SWAP(a, b, tmp) ((tmp) = (a), (a) = (b), (b) = (tmp))
 static ID_INLINE void SurfaceSwapTriangles( surface_t *self, surface_t *surf ) {
 	int		tmp;
-	drawVert_t *tmpDrawVert;
+	surfVert_t *tmpDrawVert;
 	int* tmpIntPtr;
 	surfaceEdge_t* tmpSurfEdge;
 

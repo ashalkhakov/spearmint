@@ -54,7 +54,7 @@ void SurfacePatchSetSize( surfacePatch_t *self, int patchWidth, int patchHeight 
 LerpVert
 ============
 */
-static void LerpVert( const drawVert_t *a, const drawVert_t *b, drawVert_t *out) {
+static void LerpVert( const surfVert_t *a, const surfVert_t *b, surfVert_t *out) {
 	// DG: TODO: what about out.tangent and out.color ?
 	out->xyz[0] = 0.5f * (a->xyz[0] + b->xyz[0]);
 	out->xyz[1] = 0.5f * (a->xyz[1] + b->xyz[1]);
@@ -75,7 +75,7 @@ Expects an expanded patch.
 */
 void PutOnCurve( surfacePatch_t *self ) {
 	int i, j;
-	drawVert_t prev, next;
+	surfVert_t prev, next;
 
 	assert( self->expanded == qtrue );
 	// put all the approximating points on the curve
@@ -184,7 +184,7 @@ ResizeExpanded
 void ResizeExpanded( surfacePatch_t *self, int newHeight, int newWidth) {
 	int i, j;
 	int newNumVerts;
-	drawVert_t *newVerts;
+	surfVert_t *newVerts;
 
 	assert( self->expanded == qtrue );
 	if (newHeight <= self->maxHeight && newWidth <= self->maxWidth ) {
@@ -192,7 +192,7 @@ void ResizeExpanded( surfacePatch_t *self, int newHeight, int newWidth) {
 	}
 	if ( newHeight * newWidth > self->maxHeight * self->maxWidth ) {
 		newNumVerts = newHeight * newWidth;
-		newVerts = ( drawVert_t * )ii.GetMemory( sizeof( *newVerts ) * newNumVerts );
+		newVerts = ( surfVert_t * )ii.GetMemory( sizeof( *newVerts ) * newNumVerts );
 		memcpy( newVerts, self->surf.verts, sizeof( *newVerts ) * self->surf.numVerts );
 		ii.FreeMemory( self->surf.verts );
 		self->surf.verts = newVerts;
@@ -266,7 +266,7 @@ Expects a Not expanded patch.
 #define	COPLANAR_EPSILON	0.1f
 
 void GenerateNormals( surfacePatch_t *self ) {
-	drawVert_t	*verts;
+	surfVert_t	*verts;
 	int			width, height;
 	int			i, j, k, dist;
 	vec3_t		norm;
@@ -425,7 +425,9 @@ void GenerateIndexes( surfacePatch_t *self ) {
 		
 	newNumIndexes = (self->width - 1) * (self->height - 1) * 2 * 3;
 	if ( newNumIndexes > self->surf.sizeIndexes ) {
-		ii.FreeMemory( self->surf.indexes );
+        if ( self->surf.indexes ) {
+		    ii.FreeMemory( self->surf.indexes );
+        }
 		self->surf.indexes = ( int * )ii.GetMemory( sizeof( *self->surf.indexes ) * newNumIndexes );
 		self->surf.sizeIndexes = newNumIndexes;
 	}
@@ -454,7 +456,7 @@ void GenerateIndexes( surfacePatch_t *self ) {
 SampleSinglePatchPoint
 ===============
 */
-void SampleSinglePatchPoint( const drawVert_t ctrl[3][3], float u, float v, drawVert_t *out ) {
+void SampleSinglePatchPoint( const surfVert_t ctrl[3][3], float u, float v, surfVert_t *out ) {
 	float	vCtrl[3][8];
 	int		vPoint;
 	int		axis;
@@ -515,7 +517,7 @@ void SampleSinglePatchPoint( const drawVert_t ctrl[3][3], float u, float v, draw
 SampleSinglePatch
 ===================
 */
-void SampleSinglePatch( const drawVert_t *ctrl[3][3], int baseCol, int baseRow, int width, int horzSub, int vertSub, drawVert_t *outVerts ) {
+void SampleSinglePatch( const surfVert_t *ctrl[3][3], int baseCol, int baseRow, int width, int horzSub, int vertSub, surfVert_t *outVerts ) {
 	int		i, j;
 	float	u, v;
 
@@ -532,15 +534,15 @@ void SampleSinglePatch( const drawVert_t *ctrl[3][3], int baseCol, int baseRow, 
 
 /*
 =================
-SubdivideExplicit
+SurfacePatchSubdivideExplicit
 =================
 */
-void SubdivideExplicit( surfacePatch_t *self, int horzSubdivisions, int vertSubdivisions, qboolean genNormals, qboolean removeLinear ) {
+void SurfacePatchSubdivideExplicit( surfacePatch_t *self, int horzSubdivisions, int vertSubdivisions, qboolean genNormals, qboolean removeLinear ) {
 	int i, j, k, l;
-	drawVert_t sample[3][3];
+	surfVert_t sample[3][3];
 	int outWidth = ( ( self->width - 1 ) / 2 * horzSubdivisions ) + 1;
 	int outHeight = ( ( self->height - 1 ) / 2 * vertSubdivisions ) + 1;
-	drawVert_t *dv = ( drawVert_t * )ii.GetMemory( sizeof( drawVert_t ) * outWidth * outHeight );
+	surfVert_t *dv = ( surfVert_t * )ii.GetMemory( sizeof( surfVert_t ) * outWidth * outHeight );
 
 	// generate normals for the control mesh
 	if ( genNormals ) {
@@ -563,7 +565,7 @@ void SubdivideExplicit( surfacePatch_t *self, int horzSubdivisions, int vertSubd
 	}
 	if ( outWidth * outHeight > self->surf.sizeVerts ) {
 		ii.FreeMemory( self->surf.verts );
-		self->surf.verts = ( drawVert_t * )ii.GetMemory( sizeof( *self->surf.verts ) * outWidth * outHeight );
+		self->surf.verts = ( surfVert_t * )ii.GetMemory( sizeof( *self->surf.verts ) * outWidth * outHeight );
 		self->surf.sizeVerts = outWidth * outHeight;
 	}
 	self->surf.numVerts = outWidth * outHeight;
@@ -598,11 +600,11 @@ void SubdivideExplicit( surfacePatch_t *self, int horzSubdivisions, int vertSubd
 SurfacePatchSubdivide
 =================
 */
-void Subdivide( surfacePatch_t *self, float maxHorizontalError, float maxVerticalError, float maxLength, qboolean genNormals) {
+void SurfacePatchSubdivide( surfacePatch_t *self, float maxHorizontalError, float maxVerticalError, float maxLength, qboolean genNormals) {
 	int			i, j, k, l;
-	drawVert_t	*verts;
-	drawVert_t	prev;
-	drawVert_t	next, mid;
+	surfVert_t	*verts;
+	surfVert_t	prev;
+	surfVert_t	next, mid;
 	vec3_t		prevxyz, nextxyz, midxyz;
 	vec3_t		delta;
 	float		maxHorizontalErrorSqr, maxVerticalErrorSqr, maxLengthSqr;

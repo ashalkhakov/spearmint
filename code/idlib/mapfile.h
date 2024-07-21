@@ -29,10 +29,11 @@ If you have questions concerning this license or the applicable additional terms
 #ifndef __MAPFILE_H__
 #define __MAPFILE_H__
 
-#include "../idlib/qfiles.h"
-#include "../idlib/q_containers.h"
-#include "../idlib/dict.h"
-#include "../idlib/q_extramath.h"
+#include "qfiles.h"
+#include "q_containers.h"
+#include "dict.h"
+#include "q_extramath.h"
+#include "surfacepatch.h"
 
 /*
 ===============================================================================
@@ -54,7 +55,7 @@ If you have questions concerning this license or the applicable additional terms
 #define DEFAULT_CURVE_MAX_ERROR			 4.0f
 #define DEFAULT_CURVE_MAX_ERROR_CD		 24.0f
 #define DEFAULT_CURVE_MAX_LENGTH		 -1.0f
-#define DEFAULT_CURVE_MAX_LENGTH_CD		 -1.0;
+#define DEFAULT_CURVE_MAX_LENGTH_CD		 -1.0f
 
 typedef enum {
     PRIMTYPE_INVALID = -1,
@@ -84,6 +85,7 @@ typedef struct mapPrimitive_s {
     
     // patches
 	char					material[MAX_QPATH];
+    surfacePatch_t          patch;
 	int						horzSubdivisions;
 	int						vertSubdivisions;
 	qboolean				explicitSubdivisions;
@@ -122,13 +124,41 @@ static ID_INLINE void FreeMapBrush( mapPrimitive_t *p ) {
     p->next = NULL;
 }
 
+static ID_INLINE void MapPatchInit( mapPrimitive_t *p ) {
+    DictInit( &p->epairs );
+    p->type = PRIMTYPE_PATCH;
+	p->horzSubdivisions = p->vertSubdivisions = 0;
+	p->explicitSubdivisions = qfalse;
+    p->material[0] = 0;
+    p->next = NULL;
+    SurfacePatchInit( &p->patch );
+}
+
+static ID_INLINE void MapPatchInitWithSize( mapPrimitive_t *p, int maxPatchWidth, int maxPatchHeight ) {
+    DictInit( &p->epairs );
+    p->type = PRIMTYPE_PATCH;
+	p->horzSubdivisions = p->vertSubdivisions = 0;
+	p->explicitSubdivisions = qfalse;
+    p->material[0] = 0;
+    p->next = NULL;
+    SurfacePatchInitWithSize( &p->patch, maxPatchWidth, maxPatchHeight );
+}
+
+static ID_INLINE void FreeMapPatch( mapPrimitive_t *p ) {
+    DictFree( &p->epairs );
+
+    SurfacePatchFree( &p->patch );
+
+    p->next = NULL;
+}
+
 static ID_INLINE void MapPrimitiveFree( mapPrimitive_t *p ) {
 	switch ( p->type ) {
 		case PRIMTYPE_BRUSH:
 			FreeMapBrush( p );
 			break;
 		case PRIMTYPE_PATCH:
-			// TODO: implement
+			FreeMapPatch( p );
 			break;
 		case PRIMTYPE_INVALID:
 			break;
@@ -167,47 +197,9 @@ static ID_INLINE mapBrushSide_t *GetMapBrushSide( const mapPrimitive_t *p, int i
     return side;
 }
 
-/*
-class idMapPatch : public idMapPrimitive, public idSurface_Patch {
-public:
-							idMapPatch( void );
-							idMapPatch( int maxPatchWidth, int maxPatchHeight );
-							~idMapPatch( void ) { }
-	static idMapPatch *		Parse( idLexer &src, const idVec3 &origin, bool patchDef3 = true, float version = CURRENT_MAP_VERSION );
-	bool					Write( idFile *fp, int primitiveNum, const idVec3 &origin ) const;
-	const char *			GetMaterial( void ) const { return material; }
-	void					SetMaterial( const char *p ) { material = p; }
-	int						GetHorzSubdivisions( void ) const { return horzSubdivisions; }
-	int						GetVertSubdivisions( void ) const { return vertSubdivisions; }
-	bool					GetExplicitlySubdivided( void ) const { return explicitSubdivisions; }
-	void					SetHorzSubdivisions( int n ) { horzSubdivisions = n; }
-	void					SetVertSubdivisions( int n ) { vertSubdivisions = n; }
-	void					SetExplicitlySubdivided( bool b ) { explicitSubdivisions = b; }
-	unsigned int			GetGeometryCRC( void ) const;
-
-protected:
-};
-
-ID_INLINE idMapPatch::idMapPatch( void ) {
-	type = TYPE_PATCH;
-	horzSubdivisions = vertSubdivisions = 0;
-	explicitSubdivisions = false;
-	width = height = 0;
-	maxWidth = maxHeight = 0;
-	expanded = false;
-}
-
-ID_INLINE idMapPatch::idMapPatch( int maxPatchWidth, int maxPatchHeight ) {
-	type = TYPE_PATCH;
-	horzSubdivisions = vertSubdivisions = 0;
-	explicitSubdivisions = false;
-	width = height = 0;
-	maxWidth = maxPatchWidth;
-	maxHeight = maxPatchHeight;
-	verts.SetNum( maxWidth * maxHeight );
-	expanded = false;
-}
-*/
+mapPrimitive_t *ParseMapPatch( source_t *src, const vec3_t origin, qboolean patchDef3, float version );
+qboolean MapPatchWrite( const mapPrimitive_t *p, fileHandle_t fp, int primitiveNum, const vec3_t origin );
+unsigned int GetMapPatchGeometryCRC( const mapPrimitive_t *p );
 
 typedef struct mapEntity_s {
     dict_t              epairs;
