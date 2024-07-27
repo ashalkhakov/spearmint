@@ -635,7 +635,8 @@ void *Sys_LoadGameDll(const char *name,
 
 	if(!libHandle)
 	{
-		Com_Printf("Sys_LoadGameDll(%s) failed:\n\"%s\"\n", name, Sys_LibraryError());
+        const char *error = Sys_LibraryError();
+		Com_Printf("Sys_LoadGameDll(%s) failed:\n\"%s\"\n", name, error);
 		return NULL;
 	}
 

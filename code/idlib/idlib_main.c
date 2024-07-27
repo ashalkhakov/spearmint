@@ -1,4 +1,5 @@
 #include "idlib_local.h"
+#include "dict.h"
 #include "q_containers.h"
 
 idlib_import_t ii;

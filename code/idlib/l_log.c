@@ -180,6 +180,7 @@ fileHandle_t Log_FilePointer(void)
 //===========================================================================
 void Log_Flush(void)
 {
-	if (logfile.fp) fflush(logfile.fp);
+    // TODO: make this work
+	//if (logfile.fp) fflush(logfile.fp);
 } //end of the function Log_Flush
 

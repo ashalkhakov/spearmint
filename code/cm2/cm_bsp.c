@@ -810,7 +810,7 @@ void CM_LoadBSP( const char *filename, int *checksum ) {
 	}
 	SetMapFileGeometryCRC( &out );
 
-    MapFileWrite( &out, "out", ".map", qtrue );
+    //MapFileWrite( &out, "out", ".map", qtrue );
 
 	// load into heap
 	CMod_LoadShaders();
