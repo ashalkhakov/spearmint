@@ -435,11 +435,6 @@ static void SV_ClearServer(void) {
 	DA_Free( &svs.snapshotEntities );
 	DA_Free( &sv.svEntitiesBaseline );
 
-    if ( sv.clipInitialized ) {
-        ClipFree( &sv.clip );
-        sv.clipInitialized = qfalse;
-    }
-
 	Com_Memset (&sv, 0, sizeof(sv));
 }
 
@@ -564,8 +559,6 @@ void SV_SpawnServer( char *server, qboolean killBots ) {
 	FS_Restart(qfalse);
 
 	cme.LoadBSP( va("maps/%s.bsp", server), &checksum );
-    ClipInit( &sv.clip );
-    sv.clipInitialized = qtrue;
 
 	// set serverinfo visible name
 	Cvar_Set( "mapname", server );
@@ -576,9 +569,6 @@ void SV_SpawnServer( char *server, qboolean killBots ) {
 	sv.serverId = com_frameTime;
 	sv.restartedServerId = sv.serverId; // I suppose the init here is just to be safe
 	Cvar_Set( "sv_serverid", va("%i", sv.serverId ) );
-
-	// clear physics interaction links
-	SV_ClearWorld ();
 	
 	// media configstring setting should be done during
 	// the loading stage, so connected clients don't have

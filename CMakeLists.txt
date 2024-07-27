@@ -1668,7 +1668,6 @@ set(Q3OBJ
   code/server/sv_net_chan.c
   code/server/sv_snapshot.c
   code/server/sv_world.c
-  code/server/sv_clip.c
   
   code/qcommon/unzip.c
   code/qcommon/ioapi.c

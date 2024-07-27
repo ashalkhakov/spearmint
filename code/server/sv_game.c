@@ -123,34 +123,6 @@ void SV_GameDropPlayer( int playerNum, const char *reason ) {
 
 /*
 =================
-SV_GetBrushBounds
-
-gets mins and maxs for inline bmodels
-=================
-*/
-void SV_GetBrushBounds( int modelindex, vec3_t mins, vec3_t maxs ) {
-	clipHandle_t	h;
-	char			modelName[MAX_QPATH];
-	vec3_t			bounds[2];
-
-	if (!mins || !maxs) {
-		Com_Error( ERR_DROP, "SV_GetBrushBounds: NULL" );
-	}
-
-	snprintf( modelName, sizeof(modelName), "*%d", modelindex );
-
-	h = cme.LoadModel( modelName, qfalse );
-	if ( !cme.GetModelBounds( h, bounds ) ) {
-		Com_Error( ERR_DROP, "SV_GetBrushBounds: unable to get bounds for modelindex %d", modelindex );
-	}
-	VectorCopy( bounds[0], mins );
-	VectorCopy( bounds[1], maxs );
-}
-
-
-
-/*
-=================
 SV_inPVS
 
 Also checks portalareas so that doors block sight
@@ -223,28 +195,6 @@ void SV_AdjustAreaPortalState( sharedEntity_t *ent, qboolean open ) {
 
 
 /*
-==================
-SV_EntityContact
-==================
-*/
-qboolean	SV_EntityContact( const vec3_t mins, const vec3_t maxs, const sharedEntity_t *gEnt, traceType_t type ) {
-	const float	*origin, *angles;
-	clipHandle_t	ch;
-	trace_t			trace;
-
-	// check for exact collision
-	origin = gEnt->r.currentOrigin;
-	angles = gEnt->r.currentAngles;
-
-	ch = SV_ClipHandleForEntity( gEnt );
-	CM_TransformedBoxTrace ( &trace, vec3_origin, vec3_origin, mins, maxs,
-		ch, -1, origin, angles, type );
-
-	return trace.startsolid;
-}
-
-
-/*
 ===============
 SV_GetServerinfo
 
@@ -299,6 +249,20 @@ void SV_GetUsercmd( int playerNum, usercmd_t *cmd ) {
 		Com_Error( ERR_DROP, "SV_GetUsercmd: bad playerNum:%i", playerNum );
 	}
 	*cmd = svs.players[playerNum].lastUsercmd;
+}
+
+/*
+===============
+SV_CM_GetModelName
+===============
+*/
+static void SV_CM_GetModelName( cmHandle_t model, char *buffer, int bufferSize ) {
+    const char *name;
+
+    name = cme.GetModelName( model );
+    if ( name ) {
+        Q_strncpyz( buffer, name, bufferSize );
+    }
 }
 
 //==============================================
@@ -463,29 +427,6 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 	case G_UNLINKENTITY:
 		SV_UnlinkEntity( VMA(1) );
 		return 0;
-	case G_ENTITIES_IN_BOX:
-		return SV_AreaEntities( VMA(1), VMA(2), VMA(3), args[4] );
-	case G_ENTITY_CONTACT:
-		return SV_EntityContact( VMA(1), VMA(2), VMA(3), TT_AABB );
-	case G_ENTITY_CONTACTCAPSULE:
-		return SV_EntityContact( VMA(1), VMA(2), VMA(3), TT_CAPSULE );
-	case G_TRACE:
-		SV_Trace( VMA(1), VMA(2), VMA(3), VMA(4), VMA(5), args[6], args[7], TT_AABB );
-		return 0;
-	case G_TRACECAPSULE:
-		SV_Trace( VMA(1), VMA(2), VMA(3), VMA(4), VMA(5), args[6], args[7], TT_CAPSULE );
-		return 0;
-	case G_CLIPTOENTITIES:
-		SV_ClipToEntities( VMA(1), VMA(2), VMA(3), VMA(4), VMA(5), args[6], args[7], TT_AABB );
-		return 0;
-	case G_CLIPTOENTITIESCAPSULE:
-		SV_ClipToEntities( VMA(1), VMA(2), VMA(3), VMA(4), VMA(5), args[6], args[7], TT_CAPSULE );
-		return 0;
-	case G_POINT_CONTENTS:
-		return SV_PointContents( VMA(1), args[2] );
-	case G_GET_BRUSH_BOUNDS:
-		SV_GetBrushBounds( args[1], VMA(2), VMA(3) );
-		return 0;
 	case G_IN_PVS:
 		return SV_inPVS( VMA(1), VMA(2) );
 	case G_IN_PVS_IGNORE_PORTALS:
@@ -564,6 +505,86 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 			}
 		}
 		return 0;
+
+	case G_CM_LOADMODEL: // ( const char *modelName, const qboolean precache );
+        return cme.LoadModel( VMA(1), args[2] );
+
+	case G_CM_SETUPTRMMODEL: // ( const traceModel_t *trm, qhandle_t material );
+        return cme.SetupTrmModel( VMA(1), args[2] );
+
+	case G_CM_TRMFROMMODEL: // ( const char *modelName, traceModel_t *trm );
+        return cme.TrmFromModel( VMA(1), VMA(2) );
+
+	case G_CM_GETMODELNAME: // ( cmHandle_t model, char *buffer, int size );
+        SV_CM_GetModelName( args[1], VMA(2), args[3] );
+        return 0;
+
+	case G_CM_GETMODELBOUNDS: // ( cmHandle_t model, vec3_t bounds[2] );
+        return cme.GetModelBounds( args[1], VMA(2) );
+
+	case G_CM_GETMODELCONTENTS: // ( cmHandle_t model, int *contents );
+        return cme.GetModelContents( args[1], VMA(2) );
+
+	case G_CM_GETMODELVERTEX: // ( cmHandle_t model, int vertexNum, vec3_t vertex );
+        return cme.GetModelVertex( args[1], args[2], VMA(3) );
+
+	case G_CM_GETMODELEDGE: // ( cmHandle_t model, int edgeNum, vec3_t start, vec3_t end );
+        return cme.GetModelEdge( args[1], args[2], VMA(3), VMA(4) );
+
+	case G_CM_GETMODELPOLYGON: // ( cmHandle_t model, int polygonNum, fixedWinding_t *winding );
+        return cme.GetModelPolygon( args[1], args[2], VMA(3) );
+
+	case G_CM_TRANSLATION: // ( cm_trace_t *results, const vec3_t start, const vec3_t end,
+					//				const traceModel_t *trm, const vec3_t trmAxis[3], int contentMask,
+					//				cmHandle_t model, const vec3_t modelOrigin, const vec3_t modelAxis[3] );
+        cme.Translation( VMA(1), VMA(2), VMA(3), VMA(4), VMA(5), args[6], args[7], VMA(8), VMA(9) );
+        return 0;
+
+	case G_CM_ROTATION: // ( cm_trace_t *results, const vec3_t start, const rotation_t *rotation,
+					//				const traceModel_t *trm, const vec3_t trmAxis[3], int contentMask,
+					//				cmHandle_t model, const vec3_t modelOrigin, const vec3_t modelAxis[3] );
+        cme.Rotation( VMA(1), VMA(2), VMA(3), VMA(4), VMA(5), args[6], args[7], VMA(8), VMA(9) );
+        return 0;
+
+	case G_CM_CONTENTS: // ( const vec3_t start,
+					//			const traceModel_t *trm, const vec3_t trmAxis[3], int contentMask,
+					//			cmHandle_t model, const vec3_t modelOrigin, const vec3_t modelAxis[3] );
+        return cme.Contents( VMA(1), VMA(2), VMA(3), args[4], args[5], VMA(6), VMA(7) );
+
+	case G_CM_CONTACTS: // ( contactInfo_t *contacts, const int maxContacts, const vec3_t start, const vec6_t dir, const float depth,
+					//			const traceModel_t *trm, const vec3_t trmAxis[3], int contentMask,
+					//			cmHandle_t model, const vec3_t modelOrigin, const vec3_t modelAxis[3] );
+        return cme.Contacts( VMA(1), args[2], VMA(3), VMA(4), VMF(5), VMA(6), VMA(7), args[8], args[9], VMA(10), VMA(11) );
+
+	case G_CM_DEBUGOUTPUT: // ( const vec3_t origin );
+        cme.DebugOutput( VMA(1) );
+        return 0;
+
+	case G_CM_DRAWMODEL: // ( cmHandle_t model, const vec3_t modelOrigin, const vec3_t modelAxis[3],
+					//								const vec3_t viewOrigin, const float radius );
+        cme.DrawModel( args[1], VMA(2), VMA(3), VMA(4), VMF(5) );
+        return 0;
+
+	case G_CM_MODELINFO: // ( cmHandle_t model );
+        cme.ModelInfo( args[1] );
+        return 0;
+    
+	case G_CM_LISTMODELS: // ( void );
+        cme.ListModels();
+        return 0;
+
+	case G_CM_REGISTERMATERIAL: // ( const char *name );
+        return cme.CM_RegisterMaterial( VMA(1) );
+
+	case G_CM_GETMATERIALNAME: // ( qhandle_t hShader, char *buffer, int bufferSize );
+        cme.CM_GetMaterialName( args[1], VMA(2), args[3] );
+        return 0;
+
+	case G_CM_GETMATERIALCONTENTFLAGS: // ( qhandle_t material );
+        return cme.CM_GetMaterialContentFlags( args[1] );
+
+    case G_CM_GETMATERIALSURFACEFLAGS: // ( qhandle_t material );
+        return cme.CM_GetMaterialSurfaceFlags( args[1] );
 
 	default:
 		Com_Error( ERR_DROP, "Bad game system trap: %ld", (long int) args[0] );

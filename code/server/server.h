@@ -31,9 +31,7 @@ Suite 120, Rockville, Maryland 20850 USA.
 
 #include "../idlib/q_shared.h"
 #include "../qcommon/qcommon.h"
-#include "sv_clip.h" // includes "../game/g_public.h"
-
-#define USE_CLIP 1
+#include "../game/g_public.h"
 
 //=============================================================================
 
@@ -55,13 +53,6 @@ typedef struct voipServerPacket_s
 #endif
 
 typedef struct svEntity_s {
-#if USE_CLIP
-    clipModel_t     model;
-#else
-	struct worldSector_s *worldSector;
-	struct svEntity_s *nextEntityInWorldSector;
-#endif
-	
 	int			numClusters;		// if -1, use headnode instead
 	int			clusternums[MAX_ENT_CLUSTERS];
 	int			lastCluster;		// if all the clusters don't fit in clusternums
@@ -95,9 +86,6 @@ typedef struct {
 	darray_t		svEntitiesBaseline; // for delta compression of initial sighting
 
 	char			*entityParsePoint;	// used during game VM init
-
-	clip_t  		clip;				// collision detection
-    qboolean        clipInitialized;
 
 	// the game virtual machine will update these on init and changes
 	sharedEntity_t	*gentities;
@@ -472,9 +460,6 @@ void SV_BotInitBotLib(void);
 // high level object sorting to reduce interaction tests
 //
 
-void SV_ClearWorld (void);
-// called after the world model has been loaded, before linking any entities
-
 void SV_UnlinkEntity( sharedEntity_t *ent );
 // call before removing an entity, and before trying to move one,
 // so it doesn't clip against itself
@@ -485,43 +470,6 @@ void SV_LinkEntity( sharedEntity_t *ent );
 // sets ent->r.absmin and ent->r.absmax
 // sets ent->leafnums[] for pvs determination even if the entity
 // is not solid
-
-
-clipHandle_t SV_ClipHandleForEntity( const sharedEntity_t *ent );
-
-
-void SV_SectorList_f( void );
-
-
-int SV_AreaEntities( const vec3_t mins, const vec3_t maxs, int *entityList, int maxcount );
-// fills in a table of entity numbers with entities that have bounding boxes
-// that intersect the given area.  It is possible for a non-axial bmodel
-// to be returned that doesn't actually intersect the area on an exact
-// test.
-// returns the number of pointers filled in
-// The world entity is never returned in this list.
-
-
-int SV_PointContents( const vec3_t p, int passEntityNum );
-// returns the CONTENTS_* value from the world and all entities at the given point.
-
-
-void SV_Trace( trace_t *results, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int passEntityNum, int contentmask, traceType_t type );
-// mins and maxs are relative
-
-// if the entire move stays in a solid volume, trace.allsolid will be set,
-// trace.startsolid will be set, and trace.fraction will be 0
-
-// if the starting point is in a solid, it will be allowed to move out
-// to an open area
-
-// passEntityNum is explicitly excluded from clipping checks (normally ENTITYNUM_NONE)
-
-void SV_ClipToEntities( trace_t *trace, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int entityNum, int contentmask, traceType_t type );
-// clip to entities, but not world
-
-void SV_ClipToEntity( trace_t *trace, const vec3_t start, const vec3_t mins, const vec3_t maxs, const vec3_t end, int entityNum, int contentmask, traceType_t type );
-// clip to a specific entity
 
 //
 // sv_net_chan.c
