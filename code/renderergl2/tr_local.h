@@ -2378,6 +2378,7 @@ void RB_ClearDebugPolygons( int time );
 void RB_AddDebugPolygon( const vec4_t color, const fixedWinding_t *winding, const int lifeTime, const qboolean depthTest );
 
 void RB_RenderDebugTools( void );
+void R_AddDebugToolsToScene( const refdef_t *fd );
 void RB_ShutdownDebugTools( void );
 
 /*

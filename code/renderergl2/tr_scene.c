@@ -768,6 +768,9 @@ void RE_RenderScene( const refdef_t *vmRefDef, int vmRefDefSize ) {
 		ri.Error (ERR_DROP, "R_RenderScene: NULL worldmodel");
 	}
 
+	// debug lines become scene polys
+	R_AddDebugToolsToScene( &fd );
+
 	RE_BeginScene(&fd);
 
 	// SmileTheory: playing with shadow mapping

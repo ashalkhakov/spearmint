@@ -30,6 +30,7 @@ Suite 120, Rockville, Maryland 20850 USA.
 // sv_game.c -- interface to the game dll
 
 #include "server.h"
+#include "../qcommon/debugvis.h"
 
 #include "../idlib/l_script.h"
 #include "../idlib/l_precomp.h"
@@ -585,6 +586,31 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 
     case G_CM_GETMATERIALSURFACEFLAGS: // ( qhandle_t material );
         return cme.CM_GetMaterialSurfaceFlags( args[1] );
+
+	case G_DEBUG_CLEARLINES:
+		Com_DebugClearLines( args[1] );
+		return 0;
+	case G_DEBUG_LINE:
+		Com_DebugLine( VMA(1), VMA(2), VMA(3), args[4], args[5] );
+		return 0;
+	case G_DEBUG_ARROW:
+		Com_DebugArrow( VMA(1), VMA(2), VMA(3), args[4], args[5] );
+		return 0;
+	case G_DEBUG_WINDING:
+		Com_DebugWinding( VMA(1), VMA(2), VMA(3), VMA(4), args[5], args[6] );
+		return 0;
+	case G_DEBUG_CIRCLE:
+		Com_DebugCircle( VMA(1), VMA(2), VMA(3), VMF(4), args[5], args[6], args[7] );
+		return 0;
+	case G_DEBUG_BOUNDS:
+		Com_DebugBounds( VMA(1), VMA(2), VMA(3), args[4] );
+		return 0;
+	case G_DEBUG_CLEARPOLYGONS:
+		Com_DebugClearPolygons( args[1] );
+		return 0;
+	case G_DEBUG_POLYGON:
+		Com_DebugPolygon( VMA(1), VMA(2), args[3], args[4] );
+		return 0;
 
 	default:
 		Com_Error( ERR_DROP, "Bad game system trap: %ld", (long int) args[0] );

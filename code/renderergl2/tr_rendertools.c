@@ -529,6 +529,105 @@ void RB_DebugAxis( const vec3_t origin, const vec3_t axis[3] ) {
 
 /*
 =================
+R_AddDebugLineToScene
+
+A line as a thin quad facing the viewer
+=================
+*/
+static void R_AddDebugLineToScene( qhandle_t shader, const refdef_t *fd, const vec4_t rgb, const vec3_t start, const vec3_t end ) {
+	vec3_t dir, toViewer, side, mid, e1, e2, cross;
+	polyVert_t verts[4], tmp;
+	float halfWidth, dist;
+	int i, width;
+
+	VectorSubtract( end, start, dir );
+	VectorAdd( start, end, mid );
+	VectorScale( mid, 0.5f, mid );
+	VectorSubtract( fd->vieworg, mid, toViewer );
+	dist = VectorNormalize( toViewer );
+
+	CrossProduct( dir, toViewer, side );
+	if ( VectorNormalize( side ) < 0.0001f ) {
+		return;
+	}
+
+	// about a pixel wide at any distance
+	width = r_debugLineWidth->integer;
+	if ( width < 1 ) {
+		width = 1;
+	} else if ( width > 10 ) {
+		width = 10;
+	}
+	halfWidth = MAX( dist * 0.0012f, 0.1f ) * width;
+	VectorScale( side, halfWidth, side );
+
+	VectorAdd( start, side, verts[0].xyz );
+	VectorAdd( end, side, verts[1].xyz );
+	VectorSubtract( end, side, verts[2].xyz );
+	VectorSubtract( start, side, verts[3].xyz );
+
+	for ( i = 0; i < 4; i++ ) {
+		verts[i].st[0] = ( i == 1 || i == 2 );
+		verts[i].st[1] = ( i >= 2 );
+		verts[i].modulate[0] = rgb[0] * 255;
+		verts[i].modulate[1] = rgb[1] * 255;
+		verts[i].modulate[2] = rgb[2] * 255;
+		verts[i].modulate[3] = 255;
+	}
+
+	// polygons are front facing when clockwise seen from the viewer
+	VectorSubtract( verts[1].xyz, verts[0].xyz, e1 );
+	VectorSubtract( verts[2].xyz, verts[0].xyz, e2 );
+	CrossProduct( e1, e2, cross );
+	if ( DotProduct( cross, toViewer ) > 0.0f ) {
+		tmp = verts[1];
+		verts[1] = verts[3];
+		verts[3] = tmp;
+	}
+
+	RE_AddPolyToScene( shader, 4, verts, 1, 0, 0 );
+}
+
+/*
+=================
+R_AddDebugToolsToScene
+
+The debug lines and polygon outlines go through the regular scene as polys,
+drawing them with immediate mode GL doesn't work with the FBO and GLSL
+pipeline. Called before RE_BeginScene.
+
+Lots of lines need a bigger r_maxpolys and r_maxpolyverts.
+=================
+*/
+void R_AddDebugToolsToScene( const refdef_t *fd ) {
+	qhandle_t shader;
+	debugLine_t *line;
+	debugPolygon_t *poly;
+	int i, j;
+
+	// don't do anything if this is a 2D rendering
+	if ( fd->rdflags & RDF_NOWORLDMODEL ) {
+		return;
+	}
+	if ( !rb_numDebugLines && !rb_numDebugPolygons ) {
+		return;
+	}
+
+	shader = RE_RegisterShader( "*white" );
+
+	for ( i = 0, line = rb_debugLines; i < rb_numDebugLines; i++, line++ ) {
+		R_AddDebugLineToScene( shader, fd, line->rgb, line->start, line->end );
+	}
+
+	for ( i = 0, poly = rb_debugPolygons; i < rb_numDebugPolygons; i++, poly++ ) {
+		for ( j = 0; j < poly->winding.numPoints; j++ ) {
+			R_AddDebugLineToScene( shader, fd, poly->rgb, poly->winding.points[j], poly->winding.points[(j + 1) % poly->winding.numPoints] );
+		}
+	}
+}
+
+/*
+=================
 RB_RenderDebugTools
 =================
 */

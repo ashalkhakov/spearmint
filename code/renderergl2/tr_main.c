@@ -2166,7 +2166,7 @@ void R_RenderView (viewParms_t *parms) {
 	// draw main system development information (surface outlines, etc)
 	R_FogOff();
 	R_DebugGraphics();
-    RB_RenderDebugTools();
+	// debug lines are added to the scene in RE_RenderScene
 	//RB_FogOn();
 }
 
