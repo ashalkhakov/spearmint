@@ -1338,6 +1338,10 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		cl_tempModelContents = contents;
 		return cl_tempModelHandle;
 	}
+	case CG_CM_TEMPTRACEMODEL:
+		cl_tempModelHandle = cme.SetupTrmModel( VMA(1), 0 );
+		cl_tempModelContents = args[2];
+		return cl_tempModelHandle;
 	case CG_CM_POINTCONTENTS: {
 		return cme.Contents( VMA(1), NULL, axisDefault, -1, args[2], vec3_origin, axisDefault );
 	}
