@@ -38,9 +38,13 @@ If you have questions concerning this license or the applicable additional terms
 #include "../idlib/l_script.h"
 #include "../idlib/l_precomp.h"
 
+unsigned long TokenGetUnsignedLongValue( token_t *token );
+
 #define CM_FILE_EXT			"cm"
 #define CM_FILEID			"CM"
-#define CM_FILEVERSION		"1.00"
+// 1.01: contents are stored as numbers (the names only covered Doom 3 contents)
+// and polygons store their own contents, Quake 3 brush sides use the brush's
+#define CM_FILEVERSION		"1.01"
 
 
 /*
@@ -120,7 +124,7 @@ void CM_WritePolygons( fileHandle_t fp, cm_node_t *node ) {
 		FS_WriteFloatString( fp, " ( %f %f %f )", p->bounds[0][0], p->bounds[0][1], p->bounds[0][2] );
 		FS_WriteFloatString( fp, " ( %f %f %f )", p->bounds[1][0], p->bounds[1][1], p->bounds[1][2] );
         CM_GetMaterialName( p->material, materialName, sizeof( materialName ) );
-		FS_WriteFloatString( fp, " \"%s\"\n", materialName );
+		FS_WriteFloatString( fp, " \"%s\" %u\n", materialName, (unsigned int)p->contents );
 	}
 	if ( node->planeType != -1 ) {
 		CM_WritePolygons( fp, node->children[0] );
@@ -176,7 +180,7 @@ void CM_WriteBrushes( fileHandle_t fp, cm_node_t *node ) {
 			FS_WriteFloatString( fp, "\t\t( %f %f %f ) %f\n", b->planes[i][0], b->planes[i][1], b->planes[i][2], b->planes[i][3] );
 		}
 		FS_WriteFloatString( fp, "\t} ( %f %f %f )", b->bounds[0][0], b->bounds[0][1], b->bounds[0][2] );
-		FS_WriteFloatString( fp, " ( %f %f %f ) \"%s\"\n", b->bounds[1][0], b->bounds[1][1], b->bounds[1][2], CM_StringFromContents( b->contents ) );
+		FS_WriteFloatString( fp, " ( %f %f %f ) %u\n", b->bounds[1][0], b->bounds[1][1], b->bounds[1][2], (unsigned int)b->contents );
 	}
 	if ( node->planeType != -1 ) {
 		CM_WriteBrushes( fp, node->children[0] );
@@ -240,7 +244,7 @@ void CM_WriteCollisionModelsToFile( const char *filename, int firstModel, int la
     Q_strncpyz( name, filename, sizeof( name ) );
     COM_SetExtension( name, sizeof( name ), "." CM_FILE_EXT );
 
-    ii.Com_Printf( PRINT_ALL, "writing %s\n", name );
+    ii.Com_Printf( "writing %s\n", name );
 	// _D3XP was saving to fs_cdpath
 	if ( ii.FS_FOpenFile( name, &fp, FS_WRITE ) ) {
 		ii.Com_DPrintf( "CM_WriteCollisionModelsToFile: Error opening file %s\n", name );
@@ -422,9 +426,12 @@ void CM_ParsePolygons( source_t *src, cm_model_t *model ) {
 		PC_Parse1DMatrix( src, 3, p->bounds[0] );
 		PC_Parse1DMatrix( src, 3, p->bounds[1] );
 		PC_ExpectTokenType( src, TT_STRING, 0, &token );
+		StripDoubleQuotes( token.string );
 		// get material
 		p->material = CM_RegisterMaterial( token.string );
-		p->contents = CM_GetMaterialContentFlags( p->material );
+		// contents can differ from the material's, see CM_FILEVERSION
+		PC_ExpectTokenType( src, TT_NUMBER, TT_INTEGER, &token );
+		p->contents = (int)TokenGetUnsignedLongValue( &token );
 		p->checkcount = 0;
 		// filter polygon into tree
 		R_FilterPolygonIntoTree( model, model->node, NULL, p );
@@ -465,8 +472,9 @@ void CM_ParseBrushes( source_t *src, cm_model_t *model ) {
 		PC_Parse1DMatrix( src, 3, b->bounds[1] );
 		PC_ReadToken( src, &token );
 		if ( token.type == TT_NUMBER ) {
-			b->contents = token.intvalue;		// old .cm files use a single integer
+			b->contents = (int)TokenGetUnsignedLongValue( &token );
 		} else {
+			StripDoubleQuotes( token.string );
 			b->contents = CM_ContentsFromString( token.string );
 		}
 		b->checkcount = 0;
@@ -494,6 +502,7 @@ qboolean CM_ParseCollisionModel( source_t *src ) {
 	cmLocal.numModels++;
 	// parse the file
 	PC_ExpectTokenType( src, TT_STRING, 0, &token );
+	StripDoubleQuotes( token.string );
 	Q_strncpyz( model->name, token.string, sizeof( model->name ) );
 	PC_ExpectTokenString( src, "{" );
 	while ( !PC_CheckTokenString( src, "}" ) ) {
@@ -622,19 +631,22 @@ qboolean CM_LoadCollisionModelFile( const char *name, unsigned int mapFileCRC ) 
 	SetScriptFlags( src->scriptstack, SCFL_NOSTRINGWHITESPACES );
 
 	if ( !PC_ExpectTokenString( src, CM_FILEID ) ) {
-		ii.Com_DPrintf( "%s is not an CM file.", fileName );
+		ii.Com_DPrintf( "%s is not an CM file.\n", fileName );
         PC_FreeSource( src );
 		return qfalse;
 	}
 
-	if ( !PC_ReadToken( src, &token ) || strcmp( token.string, CM_FILEVERSION ) ) {
-		ii.Com_DPrintf( "%s has version %s instead of %s", fileName, token.string, CM_FILEVERSION );
+	if ( PC_ReadToken( src, &token ) && token.type == TT_STRING ) {
+		StripDoubleQuotes( token.string );
+	}
+	if ( strcmp( token.string, CM_FILEVERSION ) ) {
+		ii.Com_DPrintf( "%s has version %s instead of %s\n", fileName, token.string, CM_FILEVERSION );
 		PC_FreeSource( src );
 		return qfalse;
 	}
 
 	if ( !PC_ExpectTokenType( src, TT_NUMBER, TT_INTEGER, &token ) ) {
-		ii.Com_Printf( "%s has no map file CRC", fileName );
+		ii.Com_Printf( "%s has no map file CRC\n", fileName );
 		PC_FreeSource( src );
 		return qfalse;
 	}

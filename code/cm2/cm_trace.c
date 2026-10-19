@@ -234,7 +234,8 @@ void CM_TraceThroughModel( cm_traceWork_t *tw ) {
 			for ( i = 0; i < numSteps; i++ ) {
 				// calculate next point on approximated circle
                 RotationFromOriginAndVector( &rot, tw->origin, tw->axis, tw->angle * ((float) (i+1) / numSteps) );
-                MatrixRotateVector( start, rot.axis, end );
+				// rotate around the rotation origin, like idVec3 * idRotation
+				RotationRotatePoint2( &rot, start, end );
 				// trace through spatial subdivision and then through leafs
 				CM_TraceThroughAxialBSPTree_r( tw, tw->model->node, 0, 1, start, end );
 				// no need to continue if something was hit already

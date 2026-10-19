@@ -420,7 +420,10 @@ int CM_PointContents( const vec3_t p, cmHandle_t model ) {
 	cm_brushRef_t *bref;
 	cm_brush_t *b;
 	plane_t *plane;
+	int contents;
 
+	// unlike Doom 3, Quake 3 expects the contents of every brush the point is in
+	contents = 0;
 	node = CM_PointNode( p, cmLocal.models[model] );
 	for ( bref = node->brushes; bref; bref = bref->next ) {
 		b = bref->b;
@@ -445,10 +448,10 @@ int CM_PointContents( const vec3_t p, cmHandle_t model ) {
 			}
 		}
 		if ( i >= b->numPlanes ) {
-			return b->contents;
+			contents |= b->contents;
 		}
 	}
-	return 0;
+	return contents;
 }
 
 /*
@@ -457,12 +460,14 @@ CM_TransformedPointContents
 ==================
 */
 int	CM_TransformedPointContents( const vec3_t p, cmHandle_t model, const vec3_t origin, const vec3_t modelAxis[3] ) {
-	vec3_t p_l, tmp;
+	vec3_t p_l, invModelAxis[3];
 
 	// subtract origin offset
     VectorSubtract( p, origin, p_l );
 	if ( AxisIsRotated( modelAxis ) ) {
-        VectorRotateSelf( p_l, modelAxis );
+		// into model space like the other tests, Doom 3 used the model axis here
+		TransposeAxis( modelAxis, invModelAxis );
+        VectorRotateSelf( p_l, ( const vec3_t * )invModelAxis );
 	}
 	return CM_PointContents( p_l, model );
 }
@@ -487,7 +492,7 @@ int CM_ContentsTrm( cm_trace_t *results, const vec3_t start,
 					trm->bounds[1][1] - trm->bounds[0][1] <= 0.0f &&
 					trm->bounds[1][2] - trm->bounds[0][2] <= 0.0f ) ) {
 
-		results->c.contents = CM_TransformedPointContents( start, model, modelOrigin, modelAxis );
+		results->c.contents = CM_TransformedPointContents( start, model, modelOrigin, modelAxis ) & contentMask;
 		results->fraction = ( results->c.contents == 0 );
         VectorCopy( start, results->endpos );
         AxisCopy( trmAxis, results->endAxis );
@@ -628,11 +633,11 @@ int CM_Contents( const vec3_t start,
 	cm_trace_t results;
 
 	if ( model < 0 || model > cmLocal.maxModels || model > MAX_SUBMODELS ) {
-		ii.Com_Printf( PRINT_ALL, "CM_Contents: invalid model handle\n");
+		ii.Com_Printf( "CM_Contents: invalid model handle\n");
 		return 0;
 	}
 	if ( !cmLocal.models || !cmLocal.models[model] ) {
-		ii.Com_Printf( PRINT_ALL, "CM_Contents: invalid model\n");
+		ii.Com_Printf( "CM_Contents: invalid model\n");
 		return 0;
 	}
 

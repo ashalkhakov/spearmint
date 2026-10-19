@@ -1610,7 +1610,7 @@ add_library(idlib OBJECT
 target_compile_definitions(idlib PRIVATE IDLIB)
 target_compile_options(idlib PUBLIC ${SHLIBCFLAGS})
 
-add_library("cm1_${SHLIBNAME}" OBJECT
+add_library("cm1_${SHLIBNAME}" OBJECT EXCLUDE_FROM_ALL
   code/cm1/cm_load.c
   code/cm1/cm_patch.c
   code/cm1/cm_test.c
@@ -2175,7 +2175,7 @@ endif()
 
 if("${PLATFORM}" MATCHES darwin)
    list(APPEND Q3OBJ
-     code/client/sys_osx.c)
+     code/sys/sys_osx.m)
 endif()
 
 # ifeq ($(USE_MUMBLE),1)
@@ -2284,6 +2284,49 @@ else()
         #$(Q)$(CC) $(CLIENT_CFLAGS) $(CFLAGS) $(CLIENT_LDFLAGS) $(LDFLAGS) $(NOTSHLIBLDFLAGS) \
         #    -o $@ $(Q3OBJ) $(Q3R2OBJ) $(Q3R2STRINGOBJ) $(JPGOBJ) $(FTOBJ) \
         #    $(LIBSDLMAIN) $(CLIENT_LIBS) $(RENDERER_LIBS) $(LIBS)
+endif()
+
+if(BUILD_SERVER)
+    # dedicated server: engine without client, sound, input or renderer
+    set(Q3DOBJ ${Q3OBJ})
+    list(FILTER Q3DOBJ EXCLUDE REGEX "code/(client|sdl)/")
+    list(APPEND Q3DOBJ
+        code/null/null_client.c
+        code/null/null_input.c
+        code/null/null_snddma.c
+        # headless model loading for the game's trap_R_LerpTag / trap_R_ModelBounds
+        code/server/sv_ref.c
+        code/renderergl1/tr_animation_mds.c
+        code/renderergl1/tr_animation_mdm.c
+        code/renderergl1/tr_model.c
+        code/renderergl1/tr_model_iqm.c)
+    add_executable("${SERVERBIN}${FULLBINEXT}" ${Q3DOBJ})
+    target_include_directories("${SERVERBIN}${FULLBINEXT}" PRIVATE code/idlib)
+    target_compile_definitions("${SERVERBIN}${FULLBINEXT}" PRIVATE DEDICATED)
+    target_link_libraries("${SERVERBIN}${FULLBINEXT}" idlib m)
+    if(USE_INTERNAL_ZLIB)
+        target_sources("${SERVERBIN}${FULLBINEXT}" PRIVATE ${ZLIB_SRCS})
+    else()
+        target_link_libraries("${SERVERBIN}${FULLBINEXT}" ${ZLIB_LIBRARIES})
+    endif()
+    if(NOT ${HAVE_VM_COMPILED})
+        target_compile_definitions("${SERVERBIN}${FULLBINEXT}" PRIVATE NO_VM_COMPILED)
+    endif()
+    if("${PLATFORM}" MATCHES darwin)
+        target_link_libraries("${SERVERBIN}${FULLBINEXT}" "-framework Cocoa")
+    endif()
+endif()
+
+if("${PLATFORM}" MATCHES darwin)
+    # sys_osx.m needs Cocoa; the macOS SDK's zlib is found but never linked
+    foreach(tgt "${CLIENTBIN}${FULLBINEXT}" "${RENDERER_PREFIX}opengl2_${SHLIBNAME}")
+        if(TARGET ${tgt})
+            target_link_libraries(${tgt} "-framework Cocoa")
+            if(NOT USE_INTERNAL_ZLIB)
+                target_link_libraries(${tgt} ${ZLIB_LIBRARIES})
+            endif()
+        endif()
+    endforeach()
 endif()
 
 #ifneq ($(strip $(LIBSDLMAIN)),)

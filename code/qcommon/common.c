@@ -4311,41 +4311,29 @@ qboolean Com_GameIsSinglePlayer( void ) {
 	return ( com_singlePlayerActive->integer );
 }
 
-static void CmTraceToTrace( cm_trace_t *t, const vec3_t start, const vec3_t end, const vec3_t mins, const vec3_t maxs, trace_t *trace, traceModel_t *trm, cmHandle_t model, vec3_t origin, vec3_t axis[3], int brushmask ) {
-    int i;
-    vec3_t dir;
+/*
+==================
+CM_TraceModelForBounds
 
-    memset( trace, 0, sizeof( *trace ) );
+Sets up a box or capsule trace model, returns NULL for a point.
+==================
+*/
+static traceModel_t *CM_TraceModelForBounds( traceModel_t *trm, const vec3_t mins, const vec3_t maxs, traceType_t type ) {
+	vec3_t bounds[2];
 
-	trace->fraction = t->fraction;
-    VectorSubtract( end, start, dir );
-    VectorMA( start, trace->fraction, dir, trace->endpos );
-	//VectorCopy( t->endpos, trace->endpos ); // TODO: worldspace or not?
+	if ( VectorCompare( mins, vec3_origin ) && VectorCompare( maxs, vec3_origin ) ) {
+		return NULL;
+	}
 
-    if ( t->c.type != CONTACT_NONE ) {
-        VectorCopy( t->c.point, trace->endpos );
-        VectorCopy( t->c.normal, trace->plane.normal );
-        trace->plane.dist = -t->c.dist;
-		trace->plane.type = PlaneTypeForNormal( trace->plane.normal );
-		SetPlaneSignbits( &trace->plane );
-        trace->surfaceNum = t->c.modelFeature + 1;
-        trace->surfaceFlags = cme.CM_GetMaterialSurfaceFlags( t->c.material );
-        trace->contents = t->c.contents;
-        trace->entityNum = t->c.entityNum;
-    }
-	trace->lateralFraction = 0.0f;
-
-    if ( cme.Contents( start, trm, axisDefault, -1, model, origin, axis ) & brushmask ) {
-        trace->startsolid = qtrue;
-    }
-    if ( trace->startsolid ) {
-        int c = cme.Contents( trace->endpos, trm, axisDefault, -1, model, origin, axis ) & brushmask;
-        if ( c ) {
-            trace->allsolid = qtrue;
-            //trace->fraction = 0;
-            //trace->contents = c;
-        }
-    }
+	VectorCopy( mins, bounds[0] );
+	VectorCopy( maxs, bounds[1] );
+	trm->type = TRM_INVALID;
+	if ( type == TT_AABB ) {
+		TraceModelSetupBox( trm, bounds );
+	} else {
+		TraceModelSetupDodecahedron( trm, bounds );
+	}
+	return trm;
 }
 
 void		CM_BoxTrace ( trace_t *results, const vec3_t start, const vec3_t end,
@@ -4358,18 +4346,16 @@ void		CM_TransformedBoxTrace( trace_t *results, const vec3_t start, const vec3_t
 						  const vec3_t mins, const vec3_t maxs,
 						  clipHandle_t model, int brushmask,
 						  const vec3_t origin, const vec3_t angles, traceType_t type ) {
-	cm_trace_t tr;
-	traceModel_t trm;
-	vec3_t		trmBounds[2];
-	vec3_t		axis[3];
+	cm_trace_t		tr;
+	traceModel_t	trmBuffer, *trm;
+	vec3_t			axis[3];
+	qboolean		startSolid, allSolid;
 
-    trm.type = TRM_INVALID;
-
-    if ( VectorCompare( angles, vec3_origin ) ) {
-        AxisCopy( axisDefault, axis );
-    } else {
-	    AnglesToAxis( angles, axis );
-    }
+	if ( VectorCompare( angles, vec3_origin ) ) {
+		AxisCopy( axisDefault, axis );
+	} else {
+		AnglesToAxis( angles, axis );
+	}
 
 	// allow NULL to be passed in for 0,0,0
 	if ( !mins ) {
@@ -4379,22 +4365,19 @@ void		CM_TransformedBoxTrace( trace_t *results, const vec3_t start, const vec3_t
 		maxs = vec3_origin;
 	}
 
-	VectorCopy( mins, trmBounds[0] );
-	VectorCopy( maxs, trmBounds[1] );
+	trm = CM_TraceModelForBounds( &trmBuffer, mins, maxs, type );
 
-	switch ( type ) {
-		case TT_AABB:
-			TraceModelSetupBox( &trm, trmBounds );
-			break;
-		case TT_CAPSULE:
-		case TT_BISPHERE:
-			TraceModelSetupDodecahedron( &trm, trmBounds );
-			break;
+	cme.Translation( &tr, start, end, trm, axisDefault, brushmask, model, origin, axis );
+
+	if ( VectorCompare( start, end ) ) {
+		// the translation was a position test
+		startSolid = allSolid = ( tr.fraction == 0.0f );
+	} else {
+		startSolid = ( cme.Contents( start, trm, axisDefault, brushmask, model, origin, axis ) != 0 );
+		allSolid = startSolid && ( cme.Contents( tr.endpos, trm, axisDefault, brushmask, model, origin, axis ) != 0 );
 	}
 
-	cme.Translation( &tr, start, end, &trm, axisDefault, brushmask, model, origin, axis );
-
-	CmTraceToTrace( &tr, start, end, mins, maxs, results, &trm, model, origin, axis, brushmask );
+	CM_TraceToQuakeTrace( results, &tr, start, cme.CM_GetMaterialSurfaceFlags( tr.c.material ), startSolid, allSolid );
 }
 
 void		CM_BiSphereTrace( trace_t *results, const vec3_t start,

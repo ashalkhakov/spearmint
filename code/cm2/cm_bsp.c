@@ -727,7 +727,7 @@ void TransferSubModelToMapEntity( const bspFile_t *bsp, dmodel_t *model, mapEnti
         AddPrimitiveToMapEntity( entity, outBrush );
     }
 
-    for ( i = model->numSurfaces - 1; i >= model->firstSurface; i-- ) {
+    for ( i = model->firstSurface + model->numSurfaces - 1; i >= model->firstSurface; i-- ) {
         dsurface_t *surf = &bsp->surfaces[i];
         if ( surf->surfaceType == MST_PATCH ) {
             outPatch = MapPatchInitFromBspPatch( bsp, surf );
@@ -794,19 +794,26 @@ void CM_LoadBSP( const char *filename, int *checksum ) {
     FreeSource( src );
     src = NULL;
 
-    entity = out.entities;
-    entityNum = 0;
-    while ( entity ) {
-        if ( entityNum >= cm_bsp->numSubmodels ) {
-            break;
+    // submodel 0 is the world, the others belong to the entity with "model" "*N"
+    for ( entity = out.entities, entityNum = 0; entity; entity = entity->next, entityNum++ ) {
+        const char *modelName;
+        int modelIndex;
+
+        if ( entityNum == 0 ) {
+            modelIndex = 0;
+        } else {
+            DictGetString( &entity->epairs, "model", "", &modelName );
+            if ( modelName[0] != '*' ) {
+                continue;
+            }
+            modelIndex = atoi( modelName + 1 );
+            if ( modelIndex <= 0 || modelIndex >= cm_bsp->numSubmodels ) {
+                continue;
+            }
         }
-        model = &cm_bsp->submodels[entityNum];
+        model = &cm_bsp->submodels[modelIndex];
 
-        TransferSubModelToMapEntity( cm_bsp, model, entity, entityNum );
-
-        entity = entity->next;
-        entityNum++;
-	
+        TransferSubModelToMapEntity( cm_bsp, model, entity, modelIndex );
 	}
 	SetMapFileGeometryCRC( &out );
 

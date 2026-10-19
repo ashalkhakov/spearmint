@@ -1163,6 +1163,23 @@ void CL_ShutdownCGame( void ) {
 
 /*
 ====================
+CL_TempModelContents
+
+Trace model polygons have all contents set, report the contents the cgame
+asked for like a Quake 3 temporary box model did.
+====================
+*/
+static cmHandle_t	cl_tempModelHandle = -1;
+static int			cl_tempModelContents;
+
+static void CL_TempModelContents( trace_t *results, clipHandle_t model ) {
+	if ( model == cl_tempModelHandle && ( results->fraction < 1.0f || results->startsolid ) ) {
+		results->contents = cl_tempModelContents;
+	}
+}
+
+/*
+====================
 CL_CgameSystemCalls
 
 The cgame module is making a system call
@@ -1301,8 +1318,9 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 
 		contents = args[3];
 
-		// FIXME: pass the contents
-		return cme.SetupTrmModel( &trm, 0 );
+		cl_tempModelHandle = cme.SetupTrmModel( &trm, 0 );
+		cl_tempModelContents = contents;
+		return cl_tempModelHandle;
 	}
 	case CG_CM_TEMPCAPSULEMODEL: {
 		vec3_t bounds[2];
@@ -1316,29 +1334,43 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 
 		contents = args[3];
 
-		// FIXME: pass the contents
-		return cme.SetupTrmModel( &trm, 0 );
+		cl_tempModelHandle = cme.SetupTrmModel( &trm, 0 );
+		cl_tempModelContents = contents;
+		return cl_tempModelHandle;
 	}
 	case CG_CM_POINTCONTENTS: {
-		return cme.Contents( VMA(1), NULL, axisDefault, 0, args[2], vec3_origin, axisDefault );
+		return cme.Contents( VMA(1), NULL, axisDefault, -1, args[2], vec3_origin, axisDefault );
 	}
 	case CG_CM_TRANSFORMEDPOINTCONTENTS: {
-		return cme.Contents( VMA(1), NULL, axisDefault, 0, args[2], VMA(3), VMA(4) );
+		// the cgame passes angles, the collision model wants an axis
+		vec3_t axis[3];
+		const float *angles = VMA(4);
+
+		if ( VectorCompare( angles, vec3_origin ) ) {
+			AxisCopy( axisDefault, axis );
+		} else {
+			AnglesToAxis( angles, axis );
+		}
+		return cme.Contents( VMA(1), NULL, axisDefault, -1, args[2], VMA(3), axis );
 	}
 	case CG_CM_BOXTRACE: {
 		CM_BoxTrace( VMA(1), VMA(2), VMA(3), VMA(4), VMA(5), args[6], args[7], TT_AABB );
+		CL_TempModelContents( VMA(1), args[6] );
 		return 0;
 	}
 	case CG_CM_CAPSULETRACE:
 		CM_BoxTrace( VMA(1), VMA(2), VMA(3), VMA(4), VMA(5), args[6], args[7], TT_CAPSULE );
+		CL_TempModelContents( VMA(1), args[6] );
 		return 0;
 	case CG_CM_TRANSFORMEDBOXTRACE:
 		CM_TransformedBoxTrace( VMA(1), VMA(2), VMA(3), VMA(4), VMA(5),
 				args[6], args[7], VMA(8), VMA(9), TT_AABB );
+		CL_TempModelContents( VMA(1), args[6] );
 		return 0;
 	case CG_CM_TRANSFORMEDCAPSULETRACE:
 		CM_TransformedBoxTrace( VMA(1), VMA(2), VMA(3), VMA(4), VMA(5),
 				args[6], args[7], VMA(8), VMA(9), TT_CAPSULE );
+		CL_TempModelContents( VMA(1), args[6] );
 		return 0;
 	case CG_CM_BISPHERETRACE:
 		CM_BiSphereTrace( VMA(1), VMA(2), VMA(3), VMF(4), VMF(5), args[6], args[7] );

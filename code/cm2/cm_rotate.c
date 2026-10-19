@@ -870,7 +870,7 @@ int CM_RotatePointThroughEpsilonPlane( const cm_traceWork_t *tw, const vec3_t po
 
 	// epsilon expanded plane
     PlaneCopy( plane, epsPlane );
-	epsPlane[3] = ( epsPlane[3] + CM_CLIP_EPSILON );
+	PlaneSetDist( epsPlane, PlaneGetDist( epsPlane ) + CM_CLIP_EPSILON );
 
 	// if the rotation sphere at the rotation origin is too far away from the polygon plane
 	d = PlaneDistance( epsPlane, origin );
@@ -1584,7 +1584,7 @@ void CM_Rotation180( cm_trace_t *results, const vec3_t rorg, const vec3_t axis,
 
 	// for back-face culling
 	if ( tw.isConvex ) {
-		if ( tw.start == tw.origin ) {
+		if ( VectorCompare( tw.start, tw.origin ) ) {
 			tw.axisIntersectsTrm = qtrue;
 		} else {
 			// determine if the rotation axis intersects the trm
@@ -1634,7 +1634,7 @@ void CM_Rotation180( cm_trace_t *results, const vec3_t rorg, const vec3_t axis,
 
 	// store results
 	*results = tw.trace;
-	VectorCompare( start, results->endpos );
+	VectorCopy( start, results->endpos );
 	if ( tw.maxTan == initialTan ) {
 		results->fraction = 1.0f;
 	} else {

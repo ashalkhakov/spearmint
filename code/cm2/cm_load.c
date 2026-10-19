@@ -129,14 +129,14 @@ void CM_LoadProcBSP( const char *name ) {
     COM_SetExtension( filename, sizeof( filename ), "." PROC_FILE_EXT );
 	src = PC_LoadSource( filename, NULL, NULL );
     if ( !src ) {
-		ii.Com_Printf( "CM_LoadProcBSP: couldn't load %s", filename );
+		ii.Com_Printf( "CM_LoadProcBSP: couldn't load %s\n", filename );
 		return;
 	}
 	//src = new idLexer( filename, LEXFL_NOSTRINGCONCAT | LEXFL_NODOLLARPRECOMPILE );
 	SetScriptFlags( src->scriptstack, SCFL_NOSTRINGWHITESPACES );
 
 	if ( !PC_ReadToken( src, &token ) || Q_stricmp( token.string, PROC_FILE_ID ) ) {
-		ii.Com_Printf( "CM_LoadProcBSP: bad id '%s' instead of '%s'", token.string, PROC_FILE_ID );
+		ii.Com_Printf( "CM_LoadProcBSP: bad id '%s' instead of '%s'\n", token.string, PROC_FILE_ID );
 		PC_FreeSource( src );
 		return;
 	}
@@ -2545,7 +2545,7 @@ int GetEdge( cm_model_t *model, const vec3_t v1, const vec3_t v2, int *edgeNum, 
 CreatePolygon
 ================
 */
-void CreatePolygon( cm_model_t *model, fixedWinding_t *w, const plane_t plane, const qhandle_t material, int primitiveNum ) {
+void CreatePolygon( cm_model_t *model, fixedWinding_t *w, const plane_t plane, const qhandle_t material, int contents, int primitiveNum ) {
 	int i, j, edgeNum, v1num;
 	int numPolyEdges, polyEdges[MAX_POINTS_ON_WINDING];
 	vec3_t bounds[2];
@@ -2588,7 +2588,7 @@ void CreatePolygon( cm_model_t *model, fixedWinding_t *w, const plane_t plane, c
 
 	p = AllocPolygon( model, numPolyEdges );
 	p->numEdges = numPolyEdges;
-	p->contents = CM_GetMaterialContentFlags( material );
+	p->contents = contents;
 	p->material = material;
 	p->checkcount = 0;
     PlaneCopy( plane, p->plane );
@@ -2608,11 +2608,8 @@ PolygonFromWinding
   NOTE: for patches primitiveNum < 0 and abs(primitiveNum) is the real number
 ================
 */
-void PolygonFromWinding( cm_model_t *model, fixedWinding_t *w, const plane_t plane, const qhandle_t material, int primitiveNum ) {
-	int contents;
+void PolygonFromWinding( cm_model_t *model, fixedWinding_t *w, const plane_t plane, const qhandle_t material, int contents, int primitiveNum ) {
 	plane_t backplane;
-
-	contents = CM_GetMaterialContentFlags( material );
 
 	// if this polygon is part of the world model
 	if ( cmLocal.numModels == 0 ) {
@@ -2637,12 +2634,12 @@ void PolygonFromWinding( cm_model_t *model, fixedWinding_t *w, const plane_t pla
 		return;
 	}
 
-	CreatePolygon( model, w, plane, material, primitiveNum );
+	CreatePolygon( model, w, plane, material, contents, primitiveNum );
 
 	if ( CM_MaterialNeedsBackSide( material ) ) {
 		ReverseFixedWindingSelf( w );
         PlaneNegate( plane, backplane );
-		CreatePolygon( model, w, backplane, material, primitiveNum );
+		CreatePolygon( model, w, backplane, material, contents, primitiveNum );
 	}
 }
 
@@ -2693,7 +2690,7 @@ void CreatePatchPolygons( cm_model_t *model, surfacePatch_t *mesh, const qhandle
                     VectorCopy( sv4->xyz, tmp );
                     AddPointToFixedWinding( &w, tmp );
 
-					PolygonFromWinding( model, &w, plane, material, -primitiveNum );
+					PolygonFromWinding( model, &w, plane, material, CM_GetMaterialContentFlags( material ), -primitiveNum );
 					continue;
 				}
 				else {
@@ -2706,7 +2703,7 @@ void CreatePatchPolygons( cm_model_t *model, surfacePatch_t *mesh, const qhandle
                     VectorCopy( sv3->xyz, tmp );
                     AddPointToFixedWinding( &w, tmp );
 
-					PolygonFromWinding( model, &w, plane, material, -primitiveNum );
+					PolygonFromWinding( model, &w, plane, material, CM_GetMaterialContentFlags( material ), -primitiveNum );
 				}
 			}
 			// create the other triangle
@@ -2724,7 +2721,7 @@ void CreatePatchPolygons( cm_model_t *model, surfacePatch_t *mesh, const qhandle
                 VectorCopy( sv4->xyz, tmp );
                 AddPointToFixedWinding( &w, tmp );
 
-				PolygonFromWinding( model, &w, plane, material, -primitiveNum );
+				PolygonFromWinding( model, &w, plane, material, CM_GetMaterialContentFlags( material ), -primitiveNum );
 			}
 		}
 	}
@@ -2768,7 +2765,7 @@ void CreateMeshPolygons( cm_model_t *model, surface_t *mesh, const qhandle_t mat
         VectorCopy( sv3->xyz, tmp );
         AddPointToFixedWinding( &w, tmp );
 
-        PolygonFromWinding( model, &w, plane, material, -primitiveNum );
+        PolygonFromWinding( model, &w, plane, material, CM_GetMaterialContentFlags( material ), -primitiveNum );
     }
 }
 
@@ -2841,6 +2838,22 @@ void ConvertPatch( cm_model_t *model, const mapPrimitive_t *patch, int primitive
 
 /*
 ================
+CM_BrushContents
+
+Quake 3 collides against the contents of the brush shader, the side shaders
+only provide the surface flags. Brushes from .map files have no brush shader,
+those use the side's contents like Doom 3.
+================
+*/
+static int CM_BrushContents( const mapPrimitive_t *mapBrush, qhandle_t sideMaterial ) {
+	if ( mapBrush->material[0] ) {
+		return CM_GetMaterialContentFlags( CM_RegisterMaterial( mapBrush->material ) );
+	}
+	return CM_GetMaterialContentFlags( sideMaterial );
+}
+
+/*
+================
 ConvertBrushSides
 ================
 */
@@ -2852,7 +2865,7 @@ void ConvertBrushSides( cm_model_t *model, const mapPrimitive_t *mapBrush, int p
 	fixedWinding_t w;
 	plane_t *planes;
 	qhandle_t material;
-	vec3_t tmp;
+	int contents;
 	plane_t pl;
 
 	assert( mapBrush->type == PRIMTYPE_BRUSH );
@@ -2867,6 +2880,7 @@ void ConvertBrushSides( cm_model_t *model, const mapPrimitive_t *mapBrush, int p
 	// create a collision polygon for each brush side
 	for ( i = 0, mapSide1 = mapBrush->sides; mapSide1; i++, mapSide1 = mapSide1->next ) {
 		material = CM_RegisterMaterial( mapSide1->material );
+		contents = CM_BrushContents( mapBrush, material );
 		// TODO: what's this?
 		//if ( !( CMI_GetMaterialContentFlags( material ) & CONTENTS_REMOVE_UTIL ) ) {
 		//	continue;
@@ -2883,7 +2897,7 @@ void ConvertBrushSides( cm_model_t *model, const mapPrimitive_t *mapBrush, int p
 		}
 
 		if ( w.numPoints ) {
-			PolygonFromWinding( model, &w, planes[i], material, primitiveNum );
+			PolygonFromWinding( model, &w, planes[i], material, contents, primitiveNum );
 		}
 	}
 
@@ -2934,6 +2948,10 @@ void ConvertBrush( cm_model_t *model, const mapPrimitive_t *mapBrush, int primit
 		for ( j = 0; j < w.numPoints; j++ ) {
 			AddPointToBounds( w.points[j], bounds[0], bounds[1] );
 		}
+	}
+	// Quake 3 brushes take their contents from the brush shader
+	if ( mapBrush->material[0] ) {
+		contents = CM_BrushContents( mapBrush, material );
 	}
 	if ( !contents ) {
 		ii.FreeMemory( planes );
@@ -3308,7 +3326,7 @@ cm_model_t *CM_LoadRenderModel( const char *fileName ) {
 			w += surf->geometry->verts[ surf->geometry->indexes[ j + 0 ] ].xyz;
 			w.GetPlane( plane );
 			plane = -plane;
-			PolygonFromWinding( model, &w, plane, surf->shader, 1 );
+			PolygonFromWinding( model, &w, plane, surf->shader, CM_GetMaterialContentFlags( surf->shader ), 1 );
 		}
 	}
 
@@ -3710,7 +3728,7 @@ CM_GetModelContents
 */
 qboolean CM_GetModelContents( cmHandle_t model, int *contents ) {
 	if ( model < 0 || model > MAX_SUBMODELS || model >= cmLocal.numModels || !cmLocal.models[model] ) {
-		ii.Com_Printf( PRINT_ALL, "GetModelContents: invalid model handle\n" );
+		ii.Com_Printf( "GetModelContents: invalid model handle\n" );
 		return qfalse;
 	}
 

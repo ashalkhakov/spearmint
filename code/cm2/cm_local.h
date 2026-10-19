@@ -422,8 +422,8 @@ void			ShutdownHash(void);
 void			ClearHash( vec3_t bounds[2] );
 int				GetVertex( cm_model_t *model, const vec3_t v, int *vertexNum );
 int				GetEdge( cm_model_t *model, const vec3_t v1, const vec3_t v2, int *edgeNum, int v1num );
-void			CreatePolygon( cm_model_t *model, fixedWinding_t *w, const plane_t plane, const qhandle_t material, int primitiveNum );
-void			PolygonFromWinding( cm_model_t *model, fixedWinding_t *w, const plane_t plane, const qhandle_t material, int primitiveNum );
+void			CreatePolygon( cm_model_t *model, fixedWinding_t *w, const plane_t plane, const qhandle_t material, int contents, int primitiveNum );
+void			PolygonFromWinding( cm_model_t *model, fixedWinding_t *w, const plane_t plane, const qhandle_t material, int contents, int primitiveNum );
 void			CM_CalculateEdgeNormals( cm_model_t *model, cm_node_t *node );
 //void			CreatePatchPolygons( cm_model_t *model, idSurface_Patch &mesh, const idMaterial *material, int primitiveNum );
 //void			ConvertPatch( cm_model_t *model, const idMapPatch *patch, int primitiveNum );
@@ -474,6 +474,7 @@ qhandle_t   CM_RegisterMaterial( const char *name );
 void		CM_GetMaterialName( qhandle_t hShader, char *buffer, int bufferSize );
 int			CM_GetMaterialContentFlags( qhandle_t material );
 int         CM_GetMaterialSurfaceFlags( qhandle_t material );
+qhandle_t   CM_FindMaterial( const char *name );
 qboolean	CM_MaterialNeedsBackSide( qhandle_t material );
 
 // cm_files.c
