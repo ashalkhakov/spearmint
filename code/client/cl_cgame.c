@@ -1383,6 +1383,16 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		CM_TransformedBiSphereTrace( VMA(1), VMA(2), VMA(3), VMF(4), VMF(5),
 				args[6], args[7], VMA(8) );
 		return 0;
+	case CG_CM_TRANSLATION:
+		cme.Translation( VMA(1), VMA(2), VMA(3), VMA(4), VMA(5), args[6], args[7], VMA(8), VMA(9) );
+		return 0;
+	case CG_CM_ROTATION:
+		cme.Rotation( VMA(1), VMA(2), VMA(3), VMA(4), VMA(5), args[6], args[7], VMA(8), VMA(9) );
+		return 0;
+	case CG_CM_CONTENTS:
+		return cme.Contents( VMA(1), VMA(2), VMA(3), args[4], args[5], VMA(6), VMA(7) );
+	case CG_CM_CONTACTS:
+		return cme.Contacts( VMA(1), args[2], VMA(3), VMA(4), VMF(5), VMA(6), VMA(7), args[8], args[9], VMA(10), VMA(11) );
 	case CG_CM_MARKFRAGMENTS:
 		return re.MarkFragments( args[1], VMA(2), VMA(3), args[4], VMA(5), args[6], VMA(7) );
 	case CG_S_STARTSOUND:
