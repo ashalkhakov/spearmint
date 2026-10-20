@@ -264,8 +264,12 @@ void Q3_BSPBrushToMapBrush(dbrush_t *bspbrush, entity_t *mapent)
 				side->surf |= SURF_HINT;
 			} //end if
 
-			if ( cfg.rs_allowladders && strstr( q3bsp->shaders[bspbrushside->shaderNum].shader, "common/ladder" ) ) {
-				Log_Print("found ladder side\n");
+			// a ladder: Quake 3's common/ladder shaders, or any side whose
+			// surface flags say so (Daikatana's converted ladders, flagged on
+			// their own textures)
+			if ( cfg.rs_allowladders && ( strstr( q3bsp->shaders[bspbrushside->shaderNum].shader, "common/ladder" )
+										  || ( q3bsp->shaders[bspbrushside->shaderNum].surfaceFlags & SURF_LADDER ) ) ) {
+				//Log_Print("found ladder side\n");
 				side->contents |= CONTENTS_LADDER;
 				foundLadder = qtrue;
 			} //end if
