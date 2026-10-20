@@ -410,21 +410,17 @@ cm_node_t *CM_PointNode( const vec3_t p, cm_model_t *model ) {
 
 /*
 ================
-CM_PointContents
+CM_PointBrushContents
 ================
 */
-int CM_PointContents( const vec3_t p, cmHandle_t model ) {
+static int CM_PointBrushContents( const vec3_t p, const cm_node_t *node ) {
 	int i;
 	float d;
-	cm_node_t *node;
 	cm_brushRef_t *bref;
 	cm_brush_t *b;
 	plane_t *plane;
-	int contents;
+	int contents = 0;
 
-	// unlike Doom 3, Quake 3 expects the contents of every brush the point is in
-	contents = 0;
-	node = CM_PointNode( p, cmLocal.models[model] );
 	for ( bref = node->brushes; bref; bref = bref->next ) {
 		b = bref->b;
 		// test if the point is within the brush bounds
@@ -450,6 +446,37 @@ int CM_PointContents( const vec3_t p, cmHandle_t model ) {
 		if ( i >= b->numPlanes ) {
 			contents |= b->contents;
 		}
+	}
+	return contents;
+}
+
+/*
+================
+CM_PointContents
+
+The brushes of every node down to the point's leaf: a brush is linked in
+the node closest to the root it fits in, so big ones, a lake of water,
+sit high up in the tree.
+================
+*/
+int CM_PointContents( const vec3_t p, cmHandle_t model ) {
+	cm_node_t *node;
+	int contents;
+
+	// unlike Doom 3, Quake 3 expects the contents of every brush the point is in
+	contents = 0;
+	node = cmLocal.models[model]->node;
+	while ( 1 ) {
+		contents |= CM_PointBrushContents( p, node );
+		if ( node->planeType == -1 ) {
+			break;
+		}
+		if ( p[node->planeType] > node->planeDist ) {
+			node = node->children[0];
+		} else {
+			node = node->children[1];
+		}
+		assert( node != NULL );
 	}
 	return contents;
 }

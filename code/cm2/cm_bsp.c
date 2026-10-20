@@ -784,6 +784,7 @@ void CM_LoadBSP( const char *filename, int *checksum ) {
     mapEntity_t *entity;
     dmodel_t *model;
     int entityNum;
+    int i;
 
 	static unsigned	last_checksum;
 
@@ -844,6 +845,12 @@ void CM_LoadBSP( const char *filename, int *checksum ) {
         TransferSubModelToMapEntity( cm_bsp, model, entity, modelIndex );
 	}
 	SetMapFileGeometryCRC( &out );
+
+	// collision comes from the shaders' contents too, a map converted again
+	// with only those changed mustn't load the collision models of the old
+	for ( i = 0; i < cm_bsp->numShaders; i++ ) {
+		out.geometryCRC ^= ( cm_bsp->shaders[i].contentFlags * 0x9E3779B1u + cm_bsp->shaders[i].surfaceFlags ) ^ ( (unsigned int)i * 0x85EBCA6Bu );
+	}
 
     //MapFileWrite( &out, "out", ".map", qtrue );
 
