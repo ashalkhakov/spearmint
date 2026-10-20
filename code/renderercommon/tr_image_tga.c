@@ -308,11 +308,12 @@ void R_LoadTGA ( const char *name, int *numTexLevels, textureLevel_t **pic)
     }
     free (flip);
   }
-#endif
+#else
   // instead we just print a warning
   if (targa_header.attributes & 0x20) {
     ri.Printf( PRINT_WARNING, "WARNING: '%s' TGA file header declares top-down image, ignoring\n", name);
   }
+#endif
 
   ri.FS_FreeFile (buffer.v);
 }
