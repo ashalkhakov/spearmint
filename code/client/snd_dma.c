@@ -530,7 +530,7 @@ if origin is NULL, the sound will be dynamically sourced from the entity
 Entchannel 0 will never override a playing sound
 ====================
 */
-static void S_Base_StartSoundEx( vec3_t origin, int entityNum, int entchannel, sfxHandle_t sfxHandle, qboolean localSound ) {
+static void S_Base_StartSoundEx( vec3_t origin, int entityNum, int entchannel, sfxHandle_t sfxHandle, qboolean localSound, float volume ) {
 	channel_t	*ch;
 	sfx_t		*sfx;
 	int			i, oldest, chosen, time;
@@ -647,7 +647,12 @@ static void S_Base_StartSoundEx( vec3_t origin, int entityNum, int entchannel, s
 		ch->fixed_origin = qfalse;
 	}
 
-	ch->master_vol = 127;
+	if ( volume < 0 ) {
+		volume = 0;
+	} else if ( volume > 1 ) {
+		volume = 1;
+	}
+	ch->master_vol = 127 * volume;
 	ch->entnum = entityNum;
 	ch->thesfx = sfx;
 	ch->startSample = START_SAMPLE_IMMEDIATE;
@@ -666,7 +671,16 @@ if origin is NULL, the sound will be dynamically sourced from the entity
 ====================
 */
 void S_Base_StartSound( vec3_t origin, int entityNum, int entchannel, sfxHandle_t sfxHandle ) {
-	S_Base_StartSoundEx( origin, entityNum, entchannel, sfxHandle, qfalse );
+	S_Base_StartSoundEx( origin, entityNum, entchannel, sfxHandle, qfalse, 1.0f );
+}
+
+/*
+====================
+S_Base_StartSoundVolume
+====================
+*/
+void S_Base_StartSoundVolume( vec3_t origin, int entityNum, int entchannel, sfxHandle_t sfxHandle, float volume ) {
+	S_Base_StartSoundEx( origin, entityNum, entchannel, sfxHandle, qfalse, volume );
 }
 
 /*
@@ -684,7 +698,7 @@ void S_Base_StartLocalSound( sfxHandle_t sfxHandle, int channelNum ) {
 		return;
 	}
 
-	S_Base_StartSoundEx( NULL, 0, channelNum, sfxHandle, qtrue );
+	S_Base_StartSoundEx( NULL, 0, channelNum, sfxHandle, qtrue, 1.0f );
 }
 
 
@@ -1723,6 +1737,7 @@ qboolean S_Base_Init( soundInterface_t *si ) {
 
 	si->Shutdown = S_Base_Shutdown;
 	si->StartSound = S_Base_StartSound;
+	si->StartSoundVolume = S_Base_StartSoundVolume;
 	si->StartLocalSound = S_Base_StartLocalSound;
 	si->StartBackgroundTrack = S_Base_StartBackgroundTrack;
 	si->StopBackgroundTrack = S_Base_StopBackgroundTrack;

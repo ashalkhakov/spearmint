@@ -606,6 +606,7 @@ typedef struct src_s
 	qboolean	isStream;		// Is this source a stream
 
 	float		curGain;		// gain employed if source is within maxdistance.
+	float		volume;			// its own, 0..1 (S_StartSoundVolume)
 	float		scaleGain;		// Last gain value for this source. 0 if muted.
 	
 	float		lastTimePos;		// On stopped loops, the last position in the buffer
@@ -807,6 +808,7 @@ static void S_AL_SrcSetup(srcHandle_t src, sfxHandle_t sfx, alSrcPriority_t prio
 	curSource->isLooping = qfalse;
 	curSource->isTracking = qfalse;
 	curSource->isStream = qfalse;
+	curSource->volume = 1.0f;
 	curSource->curGain = s_alGain->value * s_volume->value;
 	curSource->scaleGain = curSource->curGain;
 	curSource->local = local;
@@ -1234,7 +1236,7 @@ S_AL_StartSound
 Play a one-shot sound effect
 =================
 */
-static void S_AL_StartSound( vec3_t origin, int entnum, int entchannel, sfxHandle_t sfx )
+static void S_AL_StartSoundVolume( vec3_t origin, int entnum, int entchannel, sfxHandle_t sfx, float volume )
 {
 	vec3_t sorigin;
 	srcHandle_t src;
@@ -1279,6 +1281,14 @@ static void S_AL_StartSound( vec3_t origin, int entnum, int entchannel, sfxHandl
 	S_AL_SrcSetup(src, sfx, SRCPRI_ONESHOT, entnum, entchannel, qfalse);
 	
 	curSource = &srcList[src];
+	if(volume < 0)
+		volume = 0;
+	else if(volume > 1)
+		volume = 1;
+	curSource->volume = volume;
+	curSource->curGain *= volume;
+	curSource->scaleGain = curSource->curGain;
+	S_AL_Gain(curSource->alSource, curSource->curGain);
 
 	if(!origin)
 		curSource->isTracking = qtrue;
@@ -1289,6 +1299,11 @@ static void S_AL_StartSound( vec3_t origin, int entnum, int entchannel, sfxHandl
 	// Start it playing
 	curSource->isPlaying = qtrue;
 	qalSourcePlay(curSource->alSource);
+}
+
+static void S_AL_StartSound( vec3_t origin, int entnum, int entchannel, sfxHandle_t sfx )
+{
+	S_AL_StartSoundVolume( origin, entnum, entchannel, sfx, 1.0f );
 }
 
 /*
@@ -1459,7 +1474,7 @@ void S_AL_SrcUpdate( void )
 
 		// Update source parameters
 		if((s_alGain->modified) || (s_volume->modified))
-			curSource->curGain = s_alGain->value * s_volume->value;
+			curSource->curGain = s_alGain->value * s_volume->value * curSource->volume;
 		if((s_alRolloff->modified) && (!curSource->local))
 			qalSourcef(curSource->alSource, AL_ROLLOFF_FACTOR, s_alRolloff->value);
 		if(s_alMinDistance->modified)
@@ -2687,6 +2702,7 @@ qboolean S_AL_Init( soundInterface_t *si )
 
 	si->Shutdown = S_AL_Shutdown;
 	si->StartSound = S_AL_StartSound;
+	si->StartSoundVolume = S_AL_StartSoundVolume;
 	si->StartLocalSound = S_AL_StartLocalSound;
 	si->StartBackgroundTrack = S_AL_StartBackgroundTrack;
 	si->StopBackgroundTrack = S_AL_StopBackgroundTrack;

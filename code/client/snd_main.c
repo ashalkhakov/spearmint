@@ -363,6 +363,20 @@ void S_StartLocalSound( sfxHandle_t sfx, int channelNum )
 
 /*
 =================
+S_StartSoundVolume
+=================
+*/
+void S_StartSoundVolume( vec3_t origin, int entnum, int entchannel, sfxHandle_t sfx, float volume )
+{
+	if( si.StartSoundVolume ) {
+		si.StartSoundVolume( origin, entnum, entchannel, sfx, volume );
+	} else if( si.StartSound ) {
+		si.StartSound( origin, entnum, entchannel, sfx );
+	}
+}
+
+/*
+=================
 S_StartBackgroundTrack
 =================
 */

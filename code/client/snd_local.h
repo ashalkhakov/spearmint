@@ -137,6 +137,7 @@ typedef struct
 {
 	void (*Shutdown)(void);
 	void (*StartSound)( vec3_t origin, int entnum, int entchannel, sfxHandle_t sfx );
+	void (*StartSoundVolume)( vec3_t origin, int entnum, int entchannel, sfxHandle_t sfx, float volume );
 	void (*StartLocalSound)( sfxHandle_t sfx, int channelNum );
 	void (*StartBackgroundTrack)( const char *intro, const char *loop, float volume, float loopVolume );
 	void (*StopBackgroundTrack)( void );

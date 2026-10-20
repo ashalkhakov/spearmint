@@ -35,6 +35,8 @@ void S_Shutdown( void );
 
 // if origin is NULL, the sound will be dynamically sourced from the entity
 void S_StartSound( vec3_t origin, int entnum, int entchannel, sfxHandle_t sfx );
+// a sound at a volume, 0..1 of the usual (a Doom 3 sound shader's "volume")
+void S_StartSoundVolume( vec3_t origin, int entnum, int entchannel, sfxHandle_t sfx, float volume );
 void S_StartLocalSound( sfxHandle_t sfx, int channelNum );
 
 void S_StartBackgroundTrack( const char *intro, const char *loop, float volume, float loopVolume );
