@@ -574,8 +574,20 @@ int		CM_NumClusters( void ) {
 	return cmLocal.numClusters;
 }
 
+/*
+==================
+CM_NumInlineModels
+
+The BSP's models, "*0" to "*N-1". Not the collision models: those are only
+made for the entities that use a model, so there can be fewer, and the
+cgame registers render models and sound positions up to this count.
+==================
+*/
+static int cm_numInlineModels;
+
 int		CM_NumInlineModels( void ) {
-	return cmLocal.numModels; // TODO: isn't this slightly wrong?
+	// maps not loaded from a BSP only have their collision models
+	return cm_numInlineModels ? cm_numInlineModels : cmLocal.numModels;
 }
 
 char	*CM_EntityString( void ) {
@@ -845,6 +857,7 @@ void CM_LoadBSP( const char *filename, int *checksum ) {
         TransferSubModelToMapEntity( cm_bsp, model, entity, modelIndex );
 	}
 	SetMapFileGeometryCRC( &out );
+	cm_numInlineModels = cm_bsp->numSubmodels;
 
 	// collision comes from the shaders' contents too, a map converted again
 	// with only those changed mustn't load the collision models of the old
