@@ -146,6 +146,42 @@ qboolean CM_MaterialNeedsBackSide( qhandle_t material ) {
 
 /*
 =================
+CM_BspShaderMaterialName
+
+The collision material name of a BSP shader. A BSP may hold several shaders
+of one name with different contents or surface flags, brushes taking their
+contents from their own; materials are looked up by name, so each variant
+past the first gets the name with its index added.
+=================
+*/
+static void CM_BspShaderMaterialName( const bspFile_t *bsp, int shaderNum, char *buffer, int bufferSize ) {
+    const dshader_t *shader = &bsp->shaders[shaderNum];
+    const dshader_t *other;
+    int j, first = -1;
+
+    for ( j = 0; j < shaderNum; j++ ) {
+        other = &bsp->shaders[j];
+        if ( Q_stricmp( other->shader, shader->shader ) ) {
+            continue;
+        }
+        if ( first < 0 ) {
+            first = j;
+        }
+        if ( other->contentFlags == shader->contentFlags && other->surfaceFlags == shader->surfaceFlags ) {
+            shaderNum = j;
+            break;
+        }
+    }
+
+    if ( first < 0 || shaderNum == first ) {
+        Q_strncpyz( buffer, shader->shader, bufferSize );
+    } else {
+        Com_sprintf( buffer, bufferSize, "%s#%d", shader->shader, shaderNum );
+    }
+}
+
+/*
+=================
 CMod_LoadShaders
 =================
 */
@@ -183,7 +219,7 @@ void CMod_LoadShaders( void ) {
         in = &cm_bsp->shaders[i];
         material = CM_AllocMaterial();
 
-        Q_strncpyz( material->name, in->shader, sizeof( material->name ) );
+        CM_BspShaderMaterialName( cm_bsp, i, material->name, sizeof( material->name ) );
         material->contentFlags = in->contentFlags;
         material->surfaceFlags = in->surfaceFlags;
         key = HashIndexGenerateKeyForString( &cmLocal.materialsHash, material->name, qfalse );
@@ -585,7 +621,6 @@ int		CM_LeafArea( int leafnum ) {
 static mapBrushSide_t *MapBrushSideInitFromBspBrushSide( const bspFile_t *bsp, dbrushside_t *in ) {
     mapBrushSide_t *out;
     dplane_t *plane;
-    dshader_t *shader;
 
     out = ii.GetMemory( sizeof( *out ) );
 
@@ -598,8 +633,7 @@ static mapBrushSide_t *MapBrushSideInitFromBspBrushSide( const bspFile_t *bsp, d
 
     VectorScale( plane->normal, plane->dist, out->origin );
 
-    shader = &bsp->shaders[in->shaderNum];
-    Q_strncpyz( out->material, shader->shader, sizeof( out->material ) );
+    CM_BspShaderMaterialName( bsp, in->shaderNum, out->material, sizeof( out->material ) );
 
     return out;
 }
@@ -608,15 +642,13 @@ static mapPrimitive_t *MapBrushInitFromBspBrush( const bspFile_t *bsp, dbrush_t 
     mapPrimitive_t *out;
     mapBrushSide_t *outBrushSide;
     dbrushside_t *brushSide;
-    dshader_t *shader;
     int j;
 
     out = ii.GetMemory( sizeof( *out ) );
 
     MapBrushInit( out );
 
-    shader = &bsp->shaders[in->shaderNum];
-    Q_strncpyz( out->material, shader->shader, sizeof( out->material ) );
+    CM_BspShaderMaterialName( bsp, in->shaderNum, out->material, sizeof( out->material ) );
 
     for ( j = 0; j < in->numSides; j++ ) {
         brushSide = &bsp->brushSides[in->firstSide + j];
@@ -631,7 +663,6 @@ static mapPrimitive_t *MapBrushInitFromBspBrush( const bspFile_t *bsp, dbrush_t 
 
 static mapPrimitive_t *MapPatchInitFromBspPatch( const bspFile_t *bsp, dsurface_t *in ) {
     mapPrimitive_t *out;
-    dshader_t *shader;
     drawVert_t *dv;
     surfVert_t *outVert;
     int c, j;
@@ -655,8 +686,7 @@ static mapPrimitive_t *MapPatchInitFromBspPatch( const bspFile_t *bsp, dsurface_
         VectorCopy( dv->normal, outVert->normal );
     }
 
-    shader = &bsp->shaders[in->shaderNum];
-    Q_strncpyz( out->material, shader->shader, sizeof( out->material ) );
+    CM_BspShaderMaterialName( bsp, in->shaderNum, out->material, sizeof( out->material ) );
 
     out->vertSubdivisions = in->subdivisions;
     out->horzSubdivisions = in->subdivisions;
@@ -667,7 +697,6 @@ static mapPrimitive_t *MapPatchInitFromBspPatch( const bspFile_t *bsp, dsurface_
 
 static mapPrimitive_t *MapMeshInitFromBspTerrain( const bspFile_t *bsp, dsurface_t *in ) {
     mapPrimitive_t *out;
-    dshader_t *shader;
     drawVert_t *dv;
     surfVert_t *outVert;
     int *indexes;
@@ -696,8 +725,7 @@ static mapPrimitive_t *MapMeshInitFromBspTerrain( const bspFile_t *bsp, dsurface
         }
     }
 
-    shader = &bsp->shaders[in->shaderNum];
-    Q_strncpyz( out->material, shader->shader, sizeof( out->material ) );
+    CM_BspShaderMaterialName( bsp, in->shaderNum, out->material, sizeof( out->material ) );
 
     return out;
 }

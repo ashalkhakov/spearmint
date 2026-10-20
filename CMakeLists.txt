@@ -2286,6 +2286,32 @@ else()
         #    $(LIBSDLMAIN) $(CLIENT_LIBS) $(RENDERER_LIBS) $(LIBS)
 endif()
 
+# MP3 music and sounds: the client decodes them with libmad
+if(USE_CODEC_MP3)
+    target_compile_definitions("${CLIENTBIN}${FULLBINEXT}" PRIVATE USE_CODEC_MP3)
+    # the bundled libmad unless asked for the system's
+    if(USE_INTERNAL_MP3 OR "${USE_INTERNAL_MP3}" STREQUAL "")
+        set(MADDIR code/libmad-0.15.1b)
+        target_sources("${CLIENTBIN}${FULLBINEXT}" PRIVATE
+            ${MADDIR}/bit.c ${MADDIR}/decoder.c ${MADDIR}/fixed.c ${MADDIR}/frame.c
+            ${MADDIR}/huffman.c ${MADDIR}/layer3.c ${MADDIR}/layer12.c ${MADDIR}/stream.c
+            ${MADDIR}/synth.c ${MADDIR}/timer.c ${MADDIR}/version.c)
+        target_include_directories("${CLIENTBIN}${FULLBINEXT}" PRIVATE ${MADDIR}/include ${MADDIR})
+        # libmad's fixed point: assembly for a few CPUs, 64-bit C elsewhere
+        if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64|arm64|aarch64)$")
+            set(MAD_FPM FPM_64BIT)
+        elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(i.86|x86)$")
+            set(MAD_FPM FPM_INTEL)
+        else()
+            set(MAD_FPM FPM_DEFAULT)
+        endif()
+        target_compile_definitions("${CLIENTBIN}${FULLBINEXT}" PRIVATE USE_INTERNAL_MP3 ${MAD_FPM} HAVE_CONFIG_H)
+    else()
+        find_library(MAD_LIBRARY mad)
+        target_link_libraries("${CLIENTBIN}${FULLBINEXT}" ${MAD_LIBRARY})
+    endif()
+endif()
+
 if(BUILD_SERVER)
     # dedicated server: engine without client, sound, input or renderer
     set(Q3DOBJ ${Q3OBJ})
