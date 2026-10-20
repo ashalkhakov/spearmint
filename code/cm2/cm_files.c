@@ -44,7 +44,8 @@ unsigned long TokenGetUnsignedLongValue( token_t *token );
 #define CM_FILEID			"CM"
 // 1.01: contents are stored as numbers (the names only covered Doom 3 contents)
 // and polygons store their own contents, Quake 3 brush sides use the brush's
-#define CM_FILEVERSION		"1.01"
+// 1.02: internal edges found as Doom 3 does, convex edges were marked internal
+#define CM_FILEVERSION		"1.02"
 
 
 /*

@@ -1801,7 +1801,7 @@ void CM_FindInternalEdgesOnPolygon( cm_model_t *model, cm_polygon_t *p1, cm_poly
 		}
 		// the two polygon plane normals should face towards each other
         VectorSubtract( *v2, *v1, dir1 );
-        VectorSubtract( p1->plane, dir1, dir2 );
+        CrossProduct( p1->plane, dir1, dir2 );
 		if ( DotProduct( p2->plane, dir2 ) < 0 ) {
 			//continue;
 			break;

@@ -645,7 +645,10 @@ void R_BuildCloudData( shaderCommands_t *input )
 		// ok, this is really wierd. it's iterating through shader stages here,
 		// which is unnecessary for a multi-stage sky shader, as far as i can tell
 		// nuking this
-#if 1
+		// spearmint: the vertices are the same for every stage and only the
+		// first stage's indexes use them, so the copies only filled tess:
+		// a three stage cloud sky seen on every side hit SHADER_MAX_VERTEXES
+#if 0
 		for ( i = 0; i < MAX_SHADER_STAGES; i++ )
 		{
 			if ( !tess.xstages[i] ) {
