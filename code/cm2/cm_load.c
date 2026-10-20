@@ -567,7 +567,9 @@ void CM_CalculateEdgeNormals( cm_model_t *model, cm_node_t *node ) {
                         CrossProduct( p->plane, tmp2, tmp3 );
 						VectorAdd( tmp1, tmp3, edge->normal );
 
-                        VectorScale( edge->normal, ( 0.5f / ( 0.5f + 0.5f * SHARP_EDGE_DOT ) ) / VectorLength( edge->normal ), edge->normal );
+						// the scale first: VectorScale would measure the normal while writing it
+						s = ( 0.5f / ( 0.5f + 0.5f * SHARP_EDGE_DOT ) ) / VectorLength( edge->normal );
+						VectorScale( edge->normal, s, edge->normal );
 
 						model->numSharpEdges++;
 					} else {
