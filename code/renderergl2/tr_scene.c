@@ -52,6 +52,8 @@ int			r_numpolyverts;
 int			r_numpolybuffers;
 int			r_firstScenePolybuffer;
 
+int			r_numskeletonjoints;
+
 
 /*
 ====================
@@ -83,6 +85,8 @@ void R_InitNextFrame( void ) {
 
 	r_numpolybuffers = 0;
 	r_firstScenePolybuffer = 0;
+
+	r_numskeletonjoints = 0;
 }
 
 
@@ -361,6 +365,38 @@ void RE_AddPolyBufferToScene( polyBuffer_t* pPolyBuffer ) {
 
 //=================================================================================
 
+
+/*
+=====================
+RE_AddSkeletonToScene
+
+Keeps a blended skeleton (BlendSkeleton's joints) for this frame, for a
+refEntity_t to be drawn with. Returns its handle, 0 when out of room.
+=====================
+*/
+int RE_AddSkeletonToScene( const float *jointMats, int numJoints ) {
+	int handle;
+
+	if ( !tr.registered || numJoints <= 0 || r_numskeletonjoints + numJoints > MAX_SCENE_SKELETON_JOINTS ) {
+		return 0;
+	}
+	Com_Memcpy( &backEndData->skeletonJoints[r_numskeletonjoints * 12], jointMats, numJoints * 12 * sizeof( float ) );
+	handle = r_numskeletonjoints + 1;
+	r_numskeletonjoints += numJoints;
+	return handle;
+}
+
+/*
+=====================
+R_SceneSkeleton
+=====================
+*/
+const float *R_SceneSkeleton( int skeleton, int numJoints ) {
+	if ( skeleton <= 0 || skeleton - 1 + numJoints > r_numskeletonjoints ) {
+		return NULL;
+	}
+	return &backEndData->skeletonJoints[( skeleton - 1 ) * 12];
+}
 
 /*
 =====================

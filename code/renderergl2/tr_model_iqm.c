@@ -1432,6 +1432,183 @@ static void ComputeJointMats( iqmData_t *data, iqmData_t *skeleton, iqmData_t *o
 
 /*
 =================
+IQM_RelativeJoints
+
+The joints of a frame (lerped toward oldframe), relative to their parents.
+=================
+*/
+static void IQM_RelativeJoints( iqmData_t *skeleton, iqmData_t *oldSkeleton, int frame, int oldframe,
+			      float backlerp, iqmTransform_t *relativeJoints ) {
+	const iqmTransform_t *pose, *oldpose;
+	iqmTransform_t *relativeJoint = relativeJoints;
+	float lerp;
+	int i;
+
+	pose = &skeleton->poses[frame * skeleton->num_poses];
+	oldpose = &oldSkeleton->poses[oldframe * oldSkeleton->num_poses];
+	lerp = 1.0f - backlerp;
+	for ( i = 0; i < skeleton->num_poses; i++, oldpose++, pose++, relativeJoint++ ) {
+		if ( backlerp == 0.0f ) {
+			*relativeJoint = *pose;
+			continue;
+		}
+		relativeJoint->translate[0] = oldpose->translate[0] * backlerp + pose->translate[0] * lerp;
+		relativeJoint->translate[1] = oldpose->translate[1] * backlerp + pose->translate[1] * lerp;
+		relativeJoint->translate[2] = oldpose->translate[2] * backlerp + pose->translate[2] * lerp;
+		relativeJoint->scale[0] = oldpose->scale[0] * backlerp + pose->scale[0] * lerp;
+		relativeJoint->scale[1] = oldpose->scale[1] * backlerp + pose->scale[1] * lerp;
+		relativeJoint->scale[2] = oldpose->scale[2] * backlerp + pose->scale[2] * lerp;
+		QuatSlerp( oldpose->rotate, pose->rotate, lerp, relativeJoint->rotate );
+	}
+}
+
+/*
+=================
+IQM_PoseMatsFromRelative
+
+The skinning matrices of relative joints (ComputePoseMats' second half).
+=================
+*/
+static void IQM_PoseMatsFromRelative( iqmData_t *data, int numPoses, const iqmTransform_t *relativeJoints, float *poseMats ) {
+	const iqmTransform_t *relativeJoint = relativeJoints;
+	const int *jointParent = data->jointParents;
+	const float *invBindMat = data->invBindJoints;
+	float *poseMat = poseMats;
+	int i;
+
+	for ( i = 0; i < numPoses; i++, relativeJoint++, jointParent++, invBindMat += 12, poseMat += 12 ) {
+		float mat1[12], mat2[12];
+
+		JointToMatrix( relativeJoint->rotate, relativeJoint->scale, relativeJoint->translate, mat1 );
+
+		if ( *jointParent >= 0 ) {
+			Matrix34Multiply( &data->bindJoints[(*jointParent)*12], mat1, mat2 );
+			Matrix34Multiply( mat2, invBindMat, mat1 );
+			Matrix34Multiply( &poseMats[(*jointParent)*12], mat1, poseMat );
+		} else {
+			Matrix34Multiply( mat1, invBindMat, poseMat );
+		}
+	}
+}
+
+static qboolean IQM_JointInMask( const unsigned int *mask, int joint ) {
+	int i;
+
+	for ( i = 0; i < SKELETON_MASK_WORDS; i++ ) {
+		if ( mask[i] ) {
+			return ( joint >> 5 ) < SKELETON_MASK_WORDS && ( mask[joint >> 5] & ( 1u << ( joint & 31 ) ) );
+		}
+	}
+	return qtrue;	// no mask: every joint
+}
+
+/*
+=================
+R_IQMBlendSkeleton
+
+The joints (in the model's space, as LerpTag's) of several animations
+blended: the first layer is the base, each next one takes over its joints
+by its weight (Doom 3's channels and cross-fades). Returns how many joints.
+=================
+*/
+int R_IQMBlendSkeleton( iqmData_t *data, const skeletonBlend_t *blends, int numBlends, float *jointMats ) {
+	iqmTransform_t pose[IQM_MAX_JOINTS], layer[IQM_MAX_JOINTS];
+	float poseMats[IQM_MAX_JOINTS * 12];
+	int b, j, n = data->num_joints;
+
+	if ( !data->num_poses || numBlends < 1 ) {
+		Com_Memcpy( jointMats, data->bindJoints, n * 12 * sizeof( float ) );
+		return n;
+	}
+	for ( b = 0; b < numBlends; b++ ) {
+		const skeletonBlend_t *blend = &blends[b];
+		iqmData_t *skeleton = R_GetIQMModelDataByHandle( blend->frameModel, data );
+		int frame = blend->frame, oldframe = blend->oldframe;
+		float w = blend->weight;
+
+		if ( skeleton->num_poses != data->num_poses || !skeleton->num_frames ) {
+			continue;
+		}
+		frame = frame < 0 ? 0 : frame % skeleton->num_frames;
+		oldframe = oldframe < 0 ? 0 : oldframe % skeleton->num_frames;
+		IQM_RelativeJoints( skeleton, skeleton, frame, oldframe, blend->backlerp, layer );
+
+		for ( j = 0; j < data->num_poses; j++ ) {
+			if ( b == 0 ) {
+				pose[j] = layer[j];		// the base: every joint
+				continue;
+			}
+			if ( w <= 0.0f || !IQM_JointInMask( blend->jointMask, j ) ) {
+				continue;
+			}
+			if ( w >= 1.0f ) {
+				pose[j] = layer[j];
+				continue;
+			}
+			pose[j].translate[0] += ( layer[j].translate[0] - pose[j].translate[0] ) * w;
+			pose[j].translate[1] += ( layer[j].translate[1] - pose[j].translate[1] ) * w;
+			pose[j].translate[2] += ( layer[j].translate[2] - pose[j].translate[2] ) * w;
+			pose[j].scale[0] += ( layer[j].scale[0] - pose[j].scale[0] ) * w;
+			pose[j].scale[1] += ( layer[j].scale[1] - pose[j].scale[1] ) * w;
+			pose[j].scale[2] += ( layer[j].scale[2] - pose[j].scale[2] ) * w;
+			{
+				quat_t q;
+
+				QuatSlerp( pose[j].rotate, layer[j].rotate, w, q );
+				QuatCopy( q, pose[j].rotate );
+			}
+		}
+	}
+
+	IQM_PoseMatsFromRelative( data, data->num_poses, pose, poseMats );
+	for ( j = 0; j < n; j++ ) {
+		Matrix34Multiply( &poseMats[12 * j], &data->bindJoints[12 * j], &jointMats[12 * j] );
+	}
+	return n;
+}
+
+/*
+=================
+R_BlendSkeleton
+=================
+*/
+int R_BlendSkeleton( qhandle_t handle, const skeletonBlend_t *blends, int numBlends, float *jointMats, int maxJoints ) {
+	model_t *model = R_GetModelByHandle( handle );
+	iqmData_t *data;
+
+	if ( !model || model->type != MOD_IQM ) {
+		return 0;
+	}
+	data = model->modelData;
+	if ( data->num_joints > maxJoints ) {
+		return 0;
+	}
+	return R_IQMBlendSkeleton( data, blends, numBlends, jointMats );
+}
+
+/*
+=================
+IQM_SceneSkeletonPoseMats
+
+The skinning matrices of a skeleton the scene was given (AddSkeletonToScene).
+=================
+*/
+static qboolean IQM_SceneSkeletonPoseMats( iqmData_t *data, int skeleton, float *poseMats ) {
+	const float *joints;
+	int j;
+
+	joints = R_SceneSkeleton( skeleton, data->num_joints );
+	if ( !joints ) {
+		return qfalse;
+	}
+	for ( j = 0; j < data->num_joints; j++ ) {
+		Matrix34Multiply( &joints[12 * j], &data->invBindJoints[12 * j], &poseMats[12 * j] );
+	}
+	return qtrue;
+}
+
+/*
+=================
 RB_AddIQMSurfaces
 
 Compute vertices for this model surface
@@ -1499,8 +1676,11 @@ void RB_IQMSurfaceAnim( surfaceType_t *surface ) {
 	outColor = tess.color[tess.numVertexes];
 
 	if ( skeleton->num_poses > 0 ) {
-		// compute interpolated joint matrices
-		ComputePoseMats( data, skeleton, oldSkeleton, frame, oldframe, backlerp, poseMats );
+		// compute interpolated joint matrices, or take a blended skeleton's
+		if ( !backEnd.currentEntity->e.skeleton
+			|| !IQM_SceneSkeletonPoseMats( data, backEnd.currentEntity->e.skeleton, poseMats ) ) {
+			ComputePoseMats( data, skeleton, oldSkeleton, frame, oldframe, backlerp, poseMats );
+		}
 
 		// compute vertex blend influence matricies
 		for( i = 0; i < surf->num_influences; i++ ) {
@@ -1731,8 +1911,11 @@ void RB_IQMSurfaceAnimVao(srfVaoIQModel_t * surface)
 		float		jointMats[IQM_MAX_JOINTS * 12];
 		int i;
 
-		// compute interpolated joint matrices
-		ComputePoseMats( data, skeleton, oldSkeleton, frame, oldframe, backlerp, jointMats );
+		// compute interpolated joint matrices, or take a blended skeleton's
+		if ( !backEnd.currentEntity->e.skeleton
+			|| !IQM_SceneSkeletonPoseMats( data, backEnd.currentEntity->e.skeleton, jointMats ) ) {
+			ComputePoseMats( data, skeleton, oldSkeleton, frame, oldframe, backlerp, jointMats );
+		}
 
 		// convert row-major order 3x4 matrix to column-major order 4x4 matrix
 		for ( i = 0; i < data->num_poses; i++ ) {

@@ -1515,6 +1515,10 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		return 0;
 	case CG_R_MODELBOUNDS:
 		return re.ModelBounds( args[1], VMA(2), VMA(3), args[4], args[5], VMF(6) );
+	case CG_R_BLENDSKELETON:
+		return re.BlendSkeleton ? re.BlendSkeleton( args[1], VMA(2), args[3], VMA(4), args[5] ) : 0;
+	case CG_R_ADDSKELETONTOSCENE:
+		return re.AddSkeletonToScene ? re.AddSkeletonToScene( VMA(1), args[2] ) : 0;
 	case CG_R_LERPTAG:
 		return re.LerpTag( VMA(1), args[2], 0, args[3], 0, args[4], VMF(5), VMA(6), NULL, NULL, 0, 0, 0, 0, 0 );
 	case CG_R_LERPTAG_FRAMEMODEL:

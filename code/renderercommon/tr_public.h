@@ -151,6 +151,12 @@ typedef struct {
 	void ( *DebugClearPolygons )( int time );
 	void ( *DebugPolygon )( const vec4_t color, const fixedWinding_t *winding, const int lifeTime, const qboolean depthTest );
 
+	// skeletal models: the joints (3x4 matrices, as LerpTag's tags, in the
+	// model's space) of several animations blended, and handing them to the
+	// scene for a refEntity_t's skeleton
+	int		(*BlendSkeleton)( qhandle_t model, const skeletonBlend_t *blends, int numBlends, float *jointMats, int maxJoints );
+	int		(*AddSkeletonToScene)( const float *jointMats, int numJoints );
+
 } refexport_t;
 
 //

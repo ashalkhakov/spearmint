@@ -1706,6 +1706,10 @@ int R_GetMDMBoneTag( orientation_t *outTag, const model_t *mod,
 qboolean R_LoadIQM (model_t *mod, void *buffer, int filesize, const char *name );
 void R_AddIQMSurfaces( trRefEntity_t *ent );
 void RB_IQMSurfaceAnim( surfaceType_t *surface );
+int R_IQMBlendSkeleton( iqmData_t *data, const skeletonBlend_t *blends, int numBlends, float *jointMats );
+int R_BlendSkeleton( qhandle_t handle, const skeletonBlend_t *blends, int numBlends, float *jointMats, int maxJoints );
+int RE_AddSkeletonToScene( const float *jointMats, int numJoints );
+const float *R_SceneSkeleton( int skeleton, int numJoints );
 int R_IQMLerpTag( orientation_t *tag, iqmData_t *data,
                   int startTagIndex,
                   qhandle_t frameMode, int startFrame,
@@ -1886,6 +1890,8 @@ typedef enum {
 #define	MAX_POLYVERTS	8192 // used for raw polys and RT_POLY entities
 #define	MAX_POLYBUFFERS	1024
 
+#define MAX_SCENE_SKELETON_JOINTS	8192	// joints of blended skeletons a frame
+
 // all of the information needed by the back end must be
 // contained in a backEndData_t
 typedef struct {
@@ -1898,6 +1904,7 @@ typedef struct {
 	srfPoly_t	*polys;//[MAX_POLYS];
 	polyVert_t	*polyVerts;//[MAX_POLYVERTS];
 	srfPolyBuffer_t *polybuffers;//[MAX_POLYBUFFERS];
+	float		skeletonJoints[MAX_SCENE_SKELETON_JOINTS * 12];	// AddSkeletonToScene's
 	renderCommandList_t	commands;
 } backEndData_t;
 

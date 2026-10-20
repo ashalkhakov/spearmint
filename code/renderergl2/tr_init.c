@@ -1763,6 +1763,8 @@ refexport_t *GetRefAPI ( int apiVersion, refimport_t *rimp, qboolean headless ) 
 
 	re.MarkFragments = R_MarkFragments;
 	re.LerpTag = R_LerpTag;
+	re.BlendSkeleton = R_BlendSkeleton;
+	re.AddSkeletonToScene = RE_AddSkeletonToScene;
 	re.ModelBounds = R_ModelBounds;
 
 	re.ClearScene = RE_ClearScene;
