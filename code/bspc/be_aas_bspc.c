@@ -35,11 +35,11 @@ Suite 120, Rockville, Maryland 20850 USA.
 #include "../idlib/l_script.h"
 #include "../idlib/l_precomp.h"
 #include "../idlib/l_struct.h"
-#include "../botlib/aasfile.h"
-#include "../botlib/botlib.h"
-#include "../botlib/be_aas.h"
-#include "../botlib/be_aas_def.h"
-#include "../qcommon/cm_public.h"
+#include "../aas/aasfile.h"
+#include "../aas/botlib.h"
+#include "../aas/be_aas.h"
+#include "../aas/be_aas_def.h"
+#include "../cm1/cm_public.h"
 
 //#define BSPC
 

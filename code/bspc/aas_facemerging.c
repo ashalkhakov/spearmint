@@ -29,7 +29,7 @@ Suite 120, Rockville, Maryland 20850 USA.
 */
 
 #include "qbsp.h"
-#include "../botlib/aasfile.h"
+#include "../aas/aasfile.h"
 #include "aas_create.h"
 
 //===========================================================================

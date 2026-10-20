@@ -39,9 +39,9 @@ Suite 120, Rockville, Maryland 20850 USA.
 #include <sys/stat.h>
 #include "qbsp.h"
 #include "l_mem.h"
-#include "../botlib/aasfile.h"
-#include "../botlib/be_aas_cluster.h"
-#include "../botlib/be_aas_optimize.h"
+#include "../aas/aasfile.h"
+#include "../aas/be_aas_cluster.h"
+#include "../aas/be_aas_optimize.h"
 #include "aas_create.h"
 #include "aas_store.h"
 #include "aas_file.h"

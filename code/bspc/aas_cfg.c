@@ -30,12 +30,12 @@ Suite 120, Rockville, Maryland 20850 USA.
 
 #include "qbsp.h"
 #include <float.h>
-#include "../botlib/aasfile.h"
+#include "../aas/aasfile.h"
 #include "aas_store.h"
 #include "aas_cfg.h"
-#include "../botlib/l_precomp.h"
-#include "../botlib/l_struct.h"
-#include "../botlib/l_libvar.h"
+#include "../idlib/l_precomp.h"
+#include "../idlib/l_struct.h"
+#include "../idlib/l_libvar.h"
 
 //structure field offsets
 #define BBOX_OFS(x) (size_t)&(((aas_bbox_t *)0)->x)

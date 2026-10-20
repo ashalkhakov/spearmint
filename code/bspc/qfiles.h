@@ -28,7 +28,7 @@ Suite 120, Rockville, Maryland 20850 USA.
 ===========================================================================
 */
 
-#include "../qcommon/surfaceflags.h"
+#include "../idlib/surfaceflags.h"
 
 //
 // qfiles.h: quake file formats

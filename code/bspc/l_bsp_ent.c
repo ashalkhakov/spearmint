@@ -31,7 +31,7 @@ Suite 120, Rockville, Maryland 20850 USA.
 #include "l_cmd.h"
 #include "l_mem.h"
 #include "l_log.h"
-#include "../botlib/l_script.h"
+#include "../idlib/l_script.h"
 #include "l_bsp_ent.h"
 
 #define	MAX_KEY		32

@@ -29,7 +29,7 @@ Suite 120, Rockville, Maryland 20850 USA.
 */
 
 #ifndef MAX_PATH
-	#define MAX_PATH			64
+	#define MAX_PATH			1024	// paths on disk: an -output folder, a -cfg file
 #endif
 
 #ifndef PATH_SEPERATORSTR

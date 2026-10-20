@@ -38,7 +38,7 @@ Suite 120, Rockville, Maryland 20850 USA.
  *****************************************************************************/
 
 #include "../idlib/q_shared.h"
-#include "l_memory.h"
+#include "../idlib/l_memory.h"
 #include "aasfile.h"
 #include "botlib.h"
 #include "be_aas.h"

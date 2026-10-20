@@ -1267,7 +1267,7 @@ int ScriptSkipTo(script_t *script, char *value)
 script_t *LoadScriptFile(const char *filename)
 {
 	fileHandle_t fp;
-	char pathname[MAX_QPATH];
+	char pathname[MAX_OSPATH];	// bspc's are paths on disk, often longer than a game path
 	int length;
 	void *buffer;
 	script_t *script;

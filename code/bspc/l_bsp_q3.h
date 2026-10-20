@@ -29,8 +29,8 @@ Suite 120, Rockville, Maryland 20850 USA.
 */
 
 #include "q3files.h"
-#include "../qcommon/bsp.h"
-#include "../qcommon/surfaceflags.h"
+#include "../idlib/bsp/bsp.h"
+#include "../idlib/surfaceflags.h"
 
 /*
 #define	CONTENTS_SOLID			1		// an eye is never valid in a solid

@@ -44,8 +44,8 @@ Suite 120, Rockville, Maryland 20850 USA.
 #define AAS_MAX_CLUSTERS					65536
 
 #define BSPCINCLUDE
-#include "../botlib/be_aas.h"
-#include "../botlib/be_aas_def.h"
+#include "../aas/be_aas.h"
+#include "../aas/be_aas_def.h"
 
 /*
 typedef struct bspc_aas_s

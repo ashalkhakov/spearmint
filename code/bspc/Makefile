@@ -111,7 +111,10 @@ endif
 BD=$(BUILD_DIR)/bspc-debug-$(PLATFORM)-$(ARCH)
 BR=$(BUILD_DIR)/bspc-release-$(PLATFORM)-$(ARCH)
 
-BLIBDIR=$(MOUNT_DIR)/botlib
+BLIBDIR=$(MOUNT_DIR)/aas
+IDLIBDIR=$(MOUNT_DIR)/idlib
+BSPDIR=$(MOUNT_DIR)/idlib/bsp
+CM1DIR=$(MOUNT_DIR)/cm1
 BSPCDIR=$(MOUNT_DIR)/bspc
 CMDIR=$(MOUNT_DIR)/qcommon
 ZDIR=$(MOUNT_DIR)/zlib
@@ -409,6 +412,9 @@ makedirs:
 	@if [ ! -d $(B)/bspc ];then $(MKDIR) $(B)/bspc;fi
 	@if [ ! -d $(B)/botlib ];then $(MKDIR) $(B)/botlib;fi
 	@if [ ! -d $(B)/qcommon ];then $(MKDIR) $(B)/qcommon;fi
+	@if [ ! -d $(B)/idlib ];then $(MKDIR) $(B)/idlib;fi
+	@if [ ! -d $(B)/bsp ];then $(MKDIR) $(B)/bsp;fi
+	@if [ ! -d $(B)/cm1 ];then $(MKDIR) $(B)/cm1;fi
 	@if [ ! -d $(B)/zlib ];then $(MKDIR) $(B)/zlib;fi
 
 #############################################################################
@@ -420,6 +426,12 @@ $(B)/botlib/%.o: $(BLIBDIR)/%.c
 $(B)/bspc/%.o: $(BSPCDIR)/%.c
 	$(DO_CC)
 $(B)/qcommon/%.o: $(CMDIR)/%.c
+	$(DO_CC)
+$(B)/idlib/%.o: $(IDLIBDIR)/%.c
+	$(DO_CC)
+$(B)/bsp/%.o: $(BSPDIR)/%.c
+	$(DO_CC)
+$(B)/cm1/%.o: $(CM1DIR)/%.c
 	$(DO_CC)
 $(B)/zlib/%.o: $(ZDIR)/%.c
 	$(DO_CC)
@@ -444,40 +456,41 @@ BSPC_OBJS = \
 	$(B)/botlib/be_aas_sample.o\
 	$(B)/bspc/brushbsp.o\
 	$(B)/bspc/bspc.o\
-	$(B)/qcommon/bsp.o\
-	$(B)/qcommon/bsp_q3.o\
-	$(B)/qcommon/bsp_q3ihv.o\
-	$(B)/qcommon/bsp_q3test103.o\
-	$(B)/qcommon/bsp_q3test106.o\
-	$(B)/qcommon/bsp_fakk.o\
-	$(B)/qcommon/bsp_sof2.o\
-	$(B)/qcommon/bsp_ef2.o\
-	$(B)/qcommon/bsp_mohaa.o\
-	$(B)/qcommon/cm_load.o\
-	$(B)/qcommon/cm_patch.o\
-	$(B)/qcommon/cm_test.o\
-	$(B)/qcommon/cm_trace.o\
-	$(B)/qcommon/q_math.o\
-	$(B)/qcommon/q_shared.o\
+	$(B)/bspc/bspc_idlib.o\
+	$(B)/bsp/bsp.o\
+	$(B)/bsp/bsp_q3.o\
+	$(B)/bsp/bsp_q3ihv.o\
+	$(B)/bsp/bsp_q3test103.o\
+	$(B)/bsp/bsp_q3test106.o\
+	$(B)/bsp/bsp_fakk.o\
+	$(B)/bsp/bsp_sof2.o\
+	$(B)/bsp/bsp_ef2.o\
+	$(B)/bsp/bsp_mohaa.o\
+	$(B)/cm1/cm_load.o\
+	$(B)/cm1/cm_patch.o\
+	$(B)/cm1/cm_test.o\
+	$(B)/cm1/cm_trace.o\
+	$(B)/idlib/q_math.o\
+	$(B)/idlib/q_shared.o\
 	$(B)/bspc/csg.o\
 	$(B)/bspc/l_bsp_ent.o\
 	$(B)/bspc/l_bsp_q3.o\
 	$(B)/bspc/l_cmd.o\
-	$(B)/botlib/l_libvar.o\
+	$(B)/idlib/l_libvar.o\
 	$(B)/bspc/l_log.o\
 	$(B)/bspc/l_math.o\
 	$(B)/bspc/l_mem.o\
 	$(B)/bspc/l_poly.o\
-	$(B)/botlib/l_precomp.o\
+	$(B)/idlib/l_precomp.o\
 	$(B)/bspc/l_qfiles.o\
-	$(B)/botlib/l_script.o\
-	$(B)/botlib/l_struct.o\
+	$(B)/idlib/l_script.o\
+	$(B)/idlib/l_struct.o\
 	$(B)/bspc/l_threads.o\
 	$(B)/bspc/l_utils.o\
 	$(B)/bspc/leakfile.o\
 	$(B)/bspc/map.o\
 	$(B)/bspc/map_q3.o\
-	$(B)/qcommon/md4.o\
+	$(B)/idlib/md4.o\
 	$(B)/bspc/portals.o\
 	$(B)/bspc/tree.o\
 	$(B)/qcommon/ioapi.o\

@@ -29,7 +29,7 @@ Suite 120, Rockville, Maryland 20850 USA.
 */
 
 #include "qbsp.h"
-#include "../botlib/aasfile.h"
+#include "../aas/aasfile.h"
 #include "aas_create.h"
 #include "aas_store.h"
 #include "aas_gsubdiv.h"
@@ -38,7 +38,7 @@ Suite 120, Rockville, Maryland 20850 USA.
 #include "aas_edgemelting.h"
 #include "aas_prunenodes.h"
 #include "aas_cfg.h"
-#include "../qcommon/surfaceflags.h"
+#include "../idlib/surfaceflags.h"
 
 //#define AW_DEBUG
 //#define L_DEBUG

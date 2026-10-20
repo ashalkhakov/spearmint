@@ -35,7 +35,7 @@ Suite 120, Rockville, Maryland 20850 USA.
 #include "l_math.h"
 #include "l_poly.h"
 #include "l_threads.h"
-#include "../botlib/l_script.h"
+#include "../idlib/l_script.h"
 #include "l_bsp_ent.h"
 #include "qfiles.h"
 #include "l_mem.h"
