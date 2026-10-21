@@ -492,8 +492,6 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 		return re.LerpTag( VMA(1), args[2], args[3], args[4], args[5], args[6], VMF(7), VMA(8), VMA(9), VMA(10), args[11], args[12], args[13], args[14], VMF(15) );
 	case G_R_MODELBOUNDS:
 		return re.ModelBounds( args[1], VMA(2), VMA(3), args[4], args[5], VMF(6) );
-	case G_R_BLENDSKELETON:
-		return re.BlendSkeleton ? re.BlendSkeleton( args[1], VMA(2), args[3], VMA(4), args[5] ) : 0;
 
 	case G_BOT_GET_SNAPSHOT_ENTITY:
 		return SV_BotGetSnapshotEntity( args[1], args[2] );

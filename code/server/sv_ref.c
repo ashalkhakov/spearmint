@@ -76,7 +76,6 @@ refexport_t *GetRefAPI ( int apiVersion, refimport_t *rimp, qboolean headless ) 
 
 	re.RegisterModel = RE_RegisterModel;
 	re.LerpTag = R_LerpTag;
-	re.BlendSkeleton = R_BlendSkeleton;
 	re.ModelBounds = R_ModelBounds;
 
 	return &re;
