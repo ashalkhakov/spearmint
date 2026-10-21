@@ -153,6 +153,52 @@ static player_t *SV_GetPlayerByNum( void ) {
 
 /*
 ==================
+SV_LoadGame_f
+
+loadgame [name]: RTCW's, a saved game (save/<name>.svg, "quick" by default)
+back: its map at the time it was saved; the game puts the rest back
+(savegame_loading, savegame_filename). The save starts with the game's
+header: magic, version, the map (MAX_QPATH), the time, the skill.
+==================
+*/
+#define SAVEGAME_MAGIC		0x47534b44		// "DKSG", mint-arena's g_save.c
+
+static void SV_LoadGame_f( void ) {
+	char name[MAX_QPATH], path[MAX_QPATH], map[MAX_QPATH];
+	byte *buffer;
+	int size, time, skill;
+
+	Q_strncpyz( name, Cmd_Argc() > 1 ? Cmd_Argv( 1 ) : "quick", sizeof( name ) );
+	Com_sprintf( path, sizeof( path ), "save/%s.svg", name );
+	size = FS_ReadFile( path, (void **)&buffer );
+	if ( size < (int)( 2 * sizeof( int ) + MAX_QPATH + 2 * sizeof( int ) ) ) {
+		if ( size > 0 ) {
+			FS_FreeFile( buffer );
+		}
+		Com_Printf( "Can't find savegame %s\n", path );
+		return;
+	}
+	if ( LittleLong( *(int *)buffer ) != SAVEGAME_MAGIC ) {
+		FS_FreeFile( buffer );
+		Com_Printf( "%s isn't a savegame\n", path );
+		return;
+	}
+	Q_strncpyz( map, (char *)buffer + 2 * sizeof( int ), sizeof( map ) );
+	time = LittleLong( *(int *)( buffer + 2 * sizeof( int ) + MAX_QPATH ) );
+	skill = LittleLong( *(int *)( buffer + 3 * sizeof( int ) + MAX_QPATH ) );
+	FS_FreeFile( buffer );
+
+	Cvar_Set( "savegame_loading", "1" );
+	Cvar_Set( "savegame_filename", name );
+	Cvar_Set( "savegame_time", va( "%i", time ) );
+	Cvar_Set( "g_skill", va( "%i", skill ) );
+	Cvar_Set( "g_persistant", "0" );
+	Cvar_Set( "g_gametype", "3" );		// mint-arena's campaign
+	Cbuf_ExecuteText( EXEC_INSERT, va( "%s %s\n", Cvar_VariableIntegerValue( "sv_cheats" ) ? "devmap" : "map", map ) );
+}
+
+/*
+==================
 SV_Map_f
 
 Restart the server on a different map
@@ -1227,6 +1273,7 @@ void SV_AddOperatorCommands( void ) {
 	Cmd_AddCommand ("dumpuser", SV_DumpUser_f);
 	Cmd_AddCommand ("map_restart", SV_MapRestart_f);
 	Cmd_AddCommand ("map", SV_Map_f);
+	Cmd_AddCommand ("loadgame", SV_LoadGame_f);
 	Cmd_SetCommandCompletionFunc( "map", SV_CompleteMapName );
 	Cmd_AddCommand ("devmap", SV_Map_f);
 	Cmd_SetCommandCompletionFunc( "devmap", SV_CompleteMapName );

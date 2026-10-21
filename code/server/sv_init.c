@@ -575,6 +575,16 @@ void SV_SpawnServer( char *server, qboolean killBots ) {
 	// to load during actual gameplay
 	sv.state = SS_LOADING;
 
+	// a saved game resumes at the time it was saved (RTCW's loadgame), so the
+	// times the game saved still hold; the game sets savegame_time
+	if ( Cvar_VariableIntegerValue( "savegame_loading" ) ) {
+		int savegameTime = Cvar_VariableIntegerValue( "savegame_time" );
+
+		if ( savegameTime > sv.time ) {
+			sv.time = savegameTime;
+		}
+	}
+
 	// update latched bot cvars
 	SV_BotInitCvars();
 	SV_BotInitBotLib();
