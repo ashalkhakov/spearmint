@@ -84,7 +84,9 @@ void VM_Init( void ) {
 	Cvar_Get( "vm_game", "0", CVAR_ARCHIVE );
 
 	vm_cgameHeapMegs = Cvar_Get( "vm_cgameHeapMegs", "2", CVAR_ARCHIVE );
-	vm_gameHeapMegs = Cvar_Get( "vm_gameHeapMegs", "24", CVAR_ARCHIVE );
+	// Daikatana's maps: the bots' and monsters' AAS worlds (three sizes of
+	// creature), cinematics' actors, ragdolls; 24 wasn't enough for e1m1a
+	vm_gameHeapMegs = Cvar_Get( "vm_gameHeapMegs", "64", CVAR_ARCHIVE );
 	Cvar_CheckRange( vm_cgameHeapMegs, 0, 128, qtrue );
 	Cvar_CheckRange( vm_gameHeapMegs, 0, 128, qtrue );
 
