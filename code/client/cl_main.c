@@ -2093,8 +2093,15 @@ void CL_Vid_Restart_f( void ) {
 		// initialize the renderer interface
 		CL_InitRef();
 
-		// startup all the client stuff (the server game re-registers its models)
+		// startup all the client stuff
 		CL_StartHunkUsers(qfalse);
+
+		// let server game re-register models
+		if (com_sv_running->integer) {
+			// XXX
+			extern void SV_GameVidRestart(void);
+			SV_GameVidRestart();
+		}
 	}
 }
 
@@ -3303,14 +3310,6 @@ void CL_StartHunkUsers( qboolean rendererOnly ) {
 	if ( !cls.rendererStarted ) {
 		cls.rendererStarted = qtrue;
 		CL_InitRenderer();
-
-		// a local server's game shares this renderer for its models: their
-		// handles went with the old one (a map loaded after the game had
-		// registered them, a vid_restart)
-		if ( com_sv_running->integer ) {
-			extern void SV_GameVidRestart( void );
-			SV_GameVidRestart();
-		}
 	}
 
 	if ( rendererOnly ) {
