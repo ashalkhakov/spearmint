@@ -1677,6 +1677,14 @@ void CM_Rotation( cm_trace_t *results, const vec3_t start, const rotation_t *rot
 
 	memset( results, 0, sizeof( *results ) );
 
+	// a rotation of NaNs (a physics solve that blew up) can't be traced:
+	// where it starts is tested instead, rather than asserting on game data
+	if ( IS_NAN( rotation->angle ) || IS_NAN( rotation->vec[0] ) || IS_NAN( rotation->vec[1] ) || IS_NAN( rotation->vec[2] ) ) {
+		ii.Com_DPrintf( S_COLOR_YELLOW "CM_Rotation: the rotation isn't finite\n" );
+		CM_ContentsTrm( results, start, trm, trmAxis, contentMask, model, modelOrigin, modelAxis );
+		return;
+	}
+
 	// if special position test
 	if ( rotation->angle == 0.0f ) {
 		CM_ContentsTrm( results, start, trm, trmAxis, contentMask, model, modelOrigin, modelAxis );
