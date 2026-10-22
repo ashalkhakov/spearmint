@@ -302,6 +302,17 @@ Cvars that you probably don't care about or shouldn't mess with:
                                      0 - No, they aren't drawn.
                                      1 - Yes. (default)
 
+*  `r_portalVis`                    - Doom 3 style portal visibility: the map's
+                                   BSP is cut into portals between its leafs
+                                   when it loads, and each view flows from
+                                   the eye's cluster through them, narrowed
+                                   to what each portal shows (on top of the
+                                   PVS and area portals).
+                                     0 - Off, the PVS only.
+                                     1 - On. (default)
+                                     2 - On, printing how many leafs it
+                                         marks against the PVS's.
+
 *  `r_fogLightDensity`              - Fog lights' density times this. 8
                                    (default) matches Daikatana's look by
                                    eye; 1 is its fog numbers taken as

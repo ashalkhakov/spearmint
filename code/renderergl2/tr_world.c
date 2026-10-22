@@ -833,6 +833,11 @@ static void R_MarkLeaves (void) {
 	leaf = R_PointInLeaf( tr.viewParms.pvsOrigin );
 	cluster = leaf->cluster;
 
+	// through the portals from here, where it can (tr_portals.c)
+	if ( R_FlowView( leaf, R_ClusterPVS( cluster ) ) ) {
+		return;
+	}
+
 	// if the cluster is the same and the area visibility matrix
 	// hasn't changed, we don't need to mark everything again
 

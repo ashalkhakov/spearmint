@@ -138,6 +138,7 @@ cvar_t  *r_forceAutoExposureMax;
 cvar_t  *r_depthPrepass;
 cvar_t  *r_fogLights;
 cvar_t  *r_fogLightDensity;
+cvar_t  *r_portalVis;
 cvar_t  *r_ssao;
 
 cvar_t  *r_normalMapping;
@@ -1325,6 +1326,7 @@ void R_Register( void )
 	r_depthPrepass = ri.Cvar_Get( "r_depthPrepass", "1", CVAR_ARCHIVE );
 	r_fogLights = ri.Cvar_Get( "r_fogLights", "1", CVAR_ARCHIVE );
 	r_fogLightDensity = ri.Cvar_Get( "r_fogLightDensity", "8", CVAR_ARCHIVE );
+	r_portalVis = ri.Cvar_Get( "r_portalVis", "1", CVAR_ARCHIVE );
 	r_ssao = ri.Cvar_Get( "r_ssao", "0", CVAR_LATCH | CVAR_ARCHIVE );
 
 	r_normalMapping = ri.Cvar_Get( "r_normalMapping", "1", CVAR_ARCHIVE | CVAR_LATCH );

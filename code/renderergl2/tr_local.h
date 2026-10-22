@@ -1322,6 +1322,13 @@ typedef struct mnode_s {
 	int			numCustomShaders;
 } mnode_t;
 
+// a portal between two leafs, its winding on a node's plane (tr_portals.c)
+typedef struct rportal_s {
+	int			firstPoint, numPoints;	// in world_t portalPoints
+	vec4_t		plane;					// the node's, facing leafs[0]
+	int			leafs[2];				// node numbers, front and back
+} rportal_t;
+
 typedef struct {
 	vec3_t		bounds[2];		// for culling
 	int	        firstSurface;
@@ -1388,6 +1395,24 @@ typedef struct {
 
 	char		*entityString;
 	char		*entityParsePoint;
+
+	// portals between leafs (tr_portals.c)
+	int			numPortals;
+	struct rportal_s *portals;
+	vec3_t		*portalPoints;
+	int			*leafFirstPortal;		// by node number, in leafPortals
+	int			*leafNumPortals;
+	int			*leafPortals;
+	int			*clusterFirstPortal;	// the portals between clusters, by cluster
+	int			*clusterNumPortals;
+	int			*clusterPortals;
+	int			*clusterFirstLeaf;		// each cluster's leafs, node numbers
+	int			*clusterNumLeafs;
+	int			*clusterLeafs;
+	void		*flowRects;				// a view's flow's scratch (tr_portals.c)
+	byte		*flowSeen;
+	void		*flowSteps;
+	int			maxFlowSteps;
 } world_t;
 
 
@@ -2028,6 +2053,7 @@ extern  cvar_t  *r_forceAutoExposureMax;
 extern  cvar_t  *r_cameraExposure;
 
 extern  cvar_t  *r_depthPrepass;
+extern  cvar_t  *r_portalVis;			// portal flow for visibility (tr_portals.c)
 extern  cvar_t  *r_fogLightDensity;	// fog lights' density times this
 extern  cvar_t  *r_fogLights;		// fog volumes with "fogLight" shaders drawn per pixel (tr_fogvolume.c)
 extern  cvar_t  *r_ssao;
@@ -2495,6 +2521,9 @@ FOG VOLUMES, tr_fogvolume.c
 */
 
 void R_FogLightHull( fog_t *fog, const vec4_t *planes, int numPlanes );
+
+void R_PortalizeWorld( world_t *world );
+qboolean R_FlowView( mnode_t *eyeLeaf, const byte *pvs );
 void RB_DrawFogVolumes( void );
 void RB_ClipSkyPolygons( shaderCommands_t *shader );
 
