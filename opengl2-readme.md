@@ -302,8 +302,10 @@ Cvars that you probably don't care about or shouldn't mess with:
                                      0 - No, they aren't drawn.
                                      1 - Yes. (default)
 
-*  `r_fogLightDensity`              - Fog lights' density times this (1 is
-                                   Daikatana's own numbers).
+*  `r_fogLightDensity`              - Fog lights' density times this. 8
+                                   (default) matches Daikatana's look by
+                                   eye; 1 is its fog numbers taken as
+                                   they are.
 
 *  `r_mergeLightmaps`               - Merge the small (128x128) lightmaps into 
                                    2 or fewer giant (4096x4096) lightmaps.
