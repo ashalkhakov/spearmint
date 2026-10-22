@@ -473,6 +473,7 @@ static void ProjectDlightTexture( void ) {
 			VectorSet4( vector, 0, 0, 1, -2 );
 		}
 		GLSL_SetUniformVec4(sp, UNIFORM_SPOTINFO, vector);
+		GLSL_SetUniformFloat(sp, UNIFORM_LIGHTFALLOFF, ( dl->flags & REF_LINEAR_DLIGHT ) ? dl->falloff : 0.0f);
 
 		if ( dl->dlshader ) {
 			shader_t *dls = dl->dlshader;
@@ -1060,6 +1061,7 @@ static void ForwardDlight( void ) {
 			VectorSet4( vector, 0, 0, 1, -2 );
 		}
 		GLSL_SetUniformVec4(sp, UNIFORM_SPOTINFO, vector);
+		GLSL_SetUniformFloat(sp, UNIFORM_LIGHTFALLOFF, ( dl->flags & REF_LINEAR_DLIGHT ) ? dl->falloff : 0.0f);
 
 		// its shadow map in the atlas (tr_dlightshadow.c)
 		if ( dl->shadow >= 0 && dl->shadow < backEnd.refdef.numDlightShadows ) {
@@ -1663,6 +1665,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 			GLSL_SetUniformVec3(sp, UNIFORM_MODELLIGHTDIR, backEnd.currentEntity->modelLightDir);
 
 			GLSL_SetUniformFloat(sp, UNIFORM_LIGHTRADIUS, 0.0f);
+			GLSL_SetUniformFloat(sp, UNIFORM_LIGHTFALLOFF, 0.0f);
 
 			if ( pStage->rgbGen == CGEN_LIGHTING_DIFFUSE_ENTITY )
 			{

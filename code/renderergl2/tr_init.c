@@ -1803,6 +1803,7 @@ refexport_t *GetRefAPI ( int apiVersion, refimport_t *rimp, qboolean headless ) 
 	re.AddJuniorLightToScene = RE_AddJuniorLightToScene;
 	re.AddDirectedLightToScene = RE_AddDirectedLightToScene;
 	re.AddSpotLightToScene = RE_AddSpotLightToScene;
+	re.AddLinearLightToScene = RE_AddLinearLightToScene;
 	re.AddCoronaToScene = RE_AddCoronaToScene;
 	re.RenderScene = RE_RenderScene;
 

@@ -50,6 +50,7 @@ uniform float     u_AlphaTestRef;
 
 #if defined(USE_LIGHT_VECTOR)
 uniform vec4      u_SpotInfo;		// a spot light's direction and cone cosine; w -2 for a point light
+uniform float     u_LightFalloff;	// a linear light's: full until this far from its edge (0 the usual falloff)
 
 // its shadow map in the atlas (tr_dlightshadow.c)
 uniform vec4      u_LightOrigin;
@@ -429,7 +430,10 @@ void main()
 	L /= sqrt(sqrLightDist);
 
   #if defined(USE_LIGHT_VECTOR)
-	attenuation  = CalcLightAttenuation(float(var_LightDir.w > 0.0), var_LightDir.w / sqrLightDist);
+	if (u_LightFalloff > 0.0)
+		attenuation = clamp((sqrt(var_LightDir.w) - sqrt(sqrLightDist)) / u_LightFalloff, 0.0, 1.0);
+	else
+		attenuation = CalcLightAttenuation(float(var_LightDir.w > 0.0), var_LightDir.w / sqrLightDist);
 	// a spot light: only within its cone, softly at the edge
 	if (u_SpotInfo.w > -1.5)
 		attenuation *= smoothstep(u_SpotInfo.w, mix(u_SpotInfo.w, 1.0, 0.3), dot(-L, u_SpotInfo.xyz));

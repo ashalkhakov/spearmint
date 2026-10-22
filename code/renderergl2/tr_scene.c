@@ -551,6 +551,7 @@ void RE_AddDynamicLightToScene( const vec3_t org, float radius, float intensity,
 	dl->color[ 1 ] = g;
 	dl->color[ 2 ] = b;
 	dl->flags = flags;
+	dl->falloff = 0;
 	dl->shadow = -1;
 	if ( hShader ) {
 		dl->dlshader = R_GetShaderByHandle( hShader );
@@ -617,6 +618,25 @@ void RE_AddSpotLightToScene( const vec3_t org, const vec3_t dir, float radius, f
 	dl = &backEndData->dlights[r_numdlights - 1];
 	VectorNormalize2( dir, dl->dir );
 	dl->spotCos = cos( DEG2RAD( Com_Clamp( 1.0f, 89.0f, cone ) ) );
+}
+
+/*
+=====================
+RE_AddLinearLightToScene
+
+a light as Quake 2's and Daikatana's light compilers lit: full until falloff
+units from its edge, then linearly to none at radius (their min( cap,
+light - distance ), scaled to the cap), on surfaces and models
+=====================
+*/
+void RE_AddLinearLightToScene( const vec3_t org, float radius, float falloff, float intensity, float r, float g, float b ) {
+	int before = r_numdlights;
+
+	RE_AddDynamicLightToScene( org, radius, intensity, r, g, b, REF_GRID_DLIGHT | REF_SURFACE_DLIGHT | REF_LINEAR_DLIGHT, 0 );
+	if ( r_numdlights == before ) {
+		return;
+	}
+	backEndData->dlights[r_numdlights - 1].falloff = MAX( 1.0f, falloff );
 }
 
 /*

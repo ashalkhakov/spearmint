@@ -160,6 +160,7 @@ typedef struct {
 	// a spot light: as AddLightToScene, lighting only within cone degrees of
 	// dir (renderers without it light all around)
 	void	(*AddSpotLightToScene)( const vec3_t org, const vec3_t dir, float radius, float cone, float intensity, float r, float g, float b, qhandle_t hShader );
+	void	(*AddLinearLightToScene)( const vec3_t org, float radius, float falloff, float intensity, float r, float g, float b );
 
 } refexport_t;
 

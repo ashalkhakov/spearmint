@@ -116,6 +116,7 @@ typedef struct dlight_s {
 	struct shader_s	*dlshader;
 	vec3_t		dir;				// a spot light's (REF_SPOT_DLIGHT), unit
 	float		spotCos;			// cosine of its cone's half angle
+	float		falloff;			// a linear light's (REF_LINEAR_DLIGHT): how far from its edge it's full
 	int			shadow;				// in trRefdef_t dlightShadows, -1 for none
 
 	vec3_t		transformed;		// origin in local coordinate system
@@ -804,6 +805,7 @@ typedef enum
 	UNIFORM_FOGVOLUMEINFO,
 
 	UNIFORM_SPOTINFO,		// a spot light's direction and cone cosine, w -2 for a point light
+	UNIFORM_LIGHTFALLOFF,	// a linear light's falloff (REF_LINEAR_DLIGHT), 0 for the usual one
 
 	UNIFORM_DLIGHTSHADOWMAP,	// the shadow atlas (tr_dlightshadow.c)
 	UNIFORM_DLIGHTSHADOWMVPS,	// its faces' matrices, 4 columns each
@@ -2701,6 +2703,7 @@ void RE_AddVertexLightToScene( const vec3_t org, float radius, float intensity, 
 void RE_AddJuniorLightToScene( const vec3_t org, float radius, float intensity, float r, float g, float b );
 void RE_AddDirectedLightToScene( const vec3_t normal, float intensity, float r, float g, float b );
 void RE_AddSpotLightToScene( const vec3_t org, const vec3_t dir, float radius, float cone, float intensity, float r, float g, float b, qhandle_t hShader );
+void RE_AddLinearLightToScene( const vec3_t org, float radius, float falloff, float intensity, float r, float g, float b );
 void RE_AddCoronaToScene( const vec3_t org, float r, float g, float b, float scale, int id, qboolean visible, qhandle_t hShader );
 void RE_BeginScene( const refdef_t *fd );
 void RE_RenderScene( const refdef_t *fd, int fdSize );

@@ -110,6 +110,7 @@ extern qboolean  haveClampToEdge;
 #define REF_FORCE_DLIGHT	0x20 // force this dlight under all conditions
 #define REF_FLARE_DLIGHT	0x40 // allow displaying a flare at dlight origin
 #define REF_SPOT_DLIGHT		0x80 // a spot light: only in a cone around its direction (AddSpotLightToScene)
+#define REF_LINEAR_DLIGHT	0x100 // Quake 2's falloff: full until "falloff" units from its edge, then linearly none (AddLinearLightToScene)
 
 // surfaceParm flags (these are only used internally, not to be confused with surfaceFlags values in BSPs)
 #define	SURF_SKY				0x01	// lighting from environment map

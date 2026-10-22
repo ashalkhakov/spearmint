@@ -185,6 +185,7 @@ static uniformInfo_t uniformsInfo[] =
 	{ "u_FogVolumeInfo",  GLSL_VEC4 },
 
 	{ "u_SpotInfo",       GLSL_VEC4 },
+	{ "u_LightFalloff",   GLSL_FLOAT },
 
 	{ "u_DlightShadowMap",   GLSL_INT },
 	{ "u_DlightShadowMvps",  GLSL_VEC4_ARRAY },

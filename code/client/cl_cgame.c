@@ -1528,6 +1528,11 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		return 0;
 	case CG_R_MODELBOUNDS:
 		return re.ModelBounds( args[1], VMA(2), VMA(3), args[4], args[5], VMF(6) );
+	case CG_R_ADDLINEARLIGHTTOSCENE:
+		if ( re.AddLinearLightToScene ) {
+			re.AddLinearLightToScene( VMA(1), VMF(2), VMF(3), VMF(4), VMF(5), VMF(6), VMF(7) );
+		}
+		return 0;
 	case CG_R_ADDSPOTLIGHTTOSCENE:
 		if ( re.AddSpotLightToScene ) {
 			re.AddSpotLightToScene( VMA(1), VMA(2), VMF(3), VMF(4), VMF(5), VMF(6), VMF(7), VMF(8), args[9] );

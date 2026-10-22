@@ -471,6 +471,13 @@ void R_SetupEntityLighting( const trRefdef_t *refdef, trRefEntity_t *ent ) {
 				modulate = dl->intensity * 255.0;
 				VectorCopy( dl->origin, dir );
 			}
+			// a linear light (Quake 2's light compiler's), as on surfaces
+			else if ( dl->flags & REF_LINEAR_DLIGHT )
+			{
+				VectorSubtract( dl->origin, lightOrigin, dir );
+				d = dl->radius - VectorNormalize( dir );
+				modulate = 255.0f * dl->intensity * Com_Clamp( 0.0f, 1.0f, d / dl->falloff );
+			}
 			// ET dlight
 			else if ( dl->flags & REF_VERTEX_DLIGHT )
 			{
