@@ -11,10 +11,8 @@ attribute vec4 attr_BoneIndexes;
 attribute vec4 attr_BoneWeights;
 #endif
 
-uniform int     u_FogType;
 uniform vec4    u_FogDistance;
 uniform vec4    u_FogDepth;
-uniform float   u_FogEyeT;
 
 #if defined(USE_DEFORM_VERTEXES)
 uniform int     u_DeformGen;
@@ -32,7 +30,7 @@ uniform mat4 u_BoneMatrix[MAX_GLSL_BONES];
 
 uniform vec4  u_Color;
 
-varying float   var_Scale;
+varying vec2    var_FogST;
 
 #if defined(USE_DEFORM_VERTEXES)
 vec3 DeformPosition(const vec3 pos, const vec3 normal, const vec2 st)
@@ -89,29 +87,12 @@ vec3 DeformPosition(const vec3 pos, const vec3 normal, const vec2 st)
 }
 #endif
 
-float CalcFog(vec3 position)
+// the two planes' distances fog is made of, interpolated exactly; the fog
+// itself (their product, the exponential's divide, the square root) is
+// per pixel, in fogpass_fp.glsl
+vec2 CalcFogST(vec3 position)
 {
-	float s = dot(vec4(position, 1.0), u_FogDistance);
-	float t = dot(vec4(position, 1.0), u_FogDepth);
-
-	float eyeOutside = float(u_FogEyeT < 0.0);
-
-	if ( u_FogType == FT_LINEAR ) {
-		if ( eyeOutside == 0 )
-			t += u_FogEyeT;
-
-		return s * t;
-	} else {
-		// FT_EXP
-		s *= 8.0;
-
-		float fogged = float(t >= eyeOutside);
-
-		t += 1e-6;
-		t *= fogged / (t - u_FogEyeT * eyeOutside);
-
-		return s * t;
-	}
+	return vec2(dot(vec4(position, 1.0), u_FogDistance), dot(vec4(position, 1.0), u_FogDepth));
 }
 
 void main()
@@ -139,5 +120,5 @@ void main()
 
 	gl_Position = u_ModelViewProjectionMatrix * vec4(position, 1.0);
 
-	var_Scale = CalcFog(position) * u_Color.a * u_Color.a;
+	var_FogST = CalcFogST(position);
 }

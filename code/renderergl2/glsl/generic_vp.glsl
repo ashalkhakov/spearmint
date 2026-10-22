@@ -39,11 +39,8 @@ uniform vec3   u_TCGen0Vector1;
 #endif
 
 #if defined(USE_FOG)
-uniform int    u_FogType;
 uniform vec4   u_FogDistance;
 uniform vec4   u_FogDepth;
-uniform float  u_FogEyeT;
-uniform vec4   u_FogColorMask;
 #endif
 
 #if defined(USE_DEFORM_VERTEXES)
@@ -82,6 +79,9 @@ varying vec2   var_DiffuseTex;
 varying vec2   var_LightTex;
 #endif
 varying vec4   var_Color;
+#if defined(USE_FOG)
+varying vec2   var_FogST;
+#endif
 
 #if defined(USE_DEFORM_VERTEXES)
 vec3 DeformPosition(const vec3 pos, const vec3 normal, const vec2 st)
@@ -277,29 +277,11 @@ vec4 CalcColor(vec3 position, vec3 normal)
 #endif
 
 #if defined(USE_FOG)
-float CalcFog(vec3 position)
+// the two planes' distances fog is made of, interpolated exactly; the fog
+// itself is per pixel (generic_fp.glsl)
+vec2 CalcFogST(vec3 position)
 {
-	float s = dot(vec4(position, 1.0), u_FogDistance);
-	float t = dot(vec4(position, 1.0), u_FogDepth);
-
-	float eyeOutside = float(u_FogEyeT < 0.0);
-
-	if ( u_FogType == FT_LINEAR ) {
-		if ( eyeOutside == 0 )
-			t += u_FogEyeT;
-
-		return s * t;
-	} else {
-		// FT_EXP
-		s *= 8.0;
-
-		float fogged = float(t >= eyeOutside);
-
-		t += 1e-6;
-		t *= fogged / (t - u_FogEyeT * eyeOutside);
-
-		return s * t;
-	}
+	return vec2(dot(vec4(position, 1.0), u_FogDistance), dot(vec4(position, 1.0), u_FogDepth));
 }
 #endif
 
@@ -360,6 +342,6 @@ void main()
 #endif
 
 #if defined(USE_FOG)
-	var_Color *= vec4(1.0) - u_FogColorMask * sqrt(clamp(CalcFog(position), 0.0, 1.0));
+	var_FogST = CalcFogST(position);
 #endif
 }
