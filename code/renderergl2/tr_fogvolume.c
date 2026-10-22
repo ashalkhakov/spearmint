@@ -158,6 +158,28 @@ void R_FogLightHull( fog_t *fog, const vec4_t *planes, int numPlanes ) {
 
 /*
 ================
+RB_HasFogLights
+
+whether the view's world has any fog light to draw
+================
+*/
+qboolean RB_HasFogLights( void ) {
+	int i;
+
+	if ( !tr.world || !r_fogLights->integer || !tr.hdrDepthFbo || !r_depthPrepass->integer
+		|| ( backEnd.refdef.rdflags & RDF_NOWORLDMODEL ) ) {
+		return qfalse;
+	}
+	for ( i = 1; i < tr.world->numfogs; i++ ) {
+		if ( tr.world->fogs[i].fogLight && tr.world->fogs[i].numHullVerts ) {
+			return qtrue;
+		}
+	}
+	return qfalse;
+}
+
+/*
+================
 RB_DrawFogVolumes
 
 after a view's surfaces: each fog light in view, its faces that look back

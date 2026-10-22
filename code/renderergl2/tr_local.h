@@ -1741,6 +1741,7 @@ typedef struct {
 	FBO_t *last2DFBO;
 	qboolean    colorMask[4];
 	qboolean    depthFill;
+	int			depthHackPass;	// 0 every surface, 1 all but RF_DEPTHHACK entities', 2 only theirs
 } backEndState_t;
 
 /*
@@ -2556,6 +2557,7 @@ void R_RenderDlightShadows( const refdef_t *fd );
 void R_PortalizeWorld( world_t *world );
 qboolean R_FlowView( mnode_t *eyeLeaf, const byte *pvs );
 void RB_DrawFogVolumes( void );
+qboolean RB_HasFogLights( void );
 void RB_ClipSkyPolygons( shaderCommands_t *shader );
 
 /*

@@ -466,6 +466,7 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 	int				i;
 	drawSurf_t		*drawSurf;
 	uint64_t		oldSort;
+	qboolean		skipped = qfalse;
 	double			originalTime;
 	FBO_t*			fbo = NULL;
 
@@ -493,6 +494,8 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 		if ( drawSurf->sort == oldSort && drawSurf->shaderIndex == oldShaderIndex && drawSurf->cubemapIndex == oldCubemapIndex) {
 			if (backEnd.depthFill && shader && (shader->sort != SS_OPAQUE && shader->sort != SS_PORTAL))
 				continue;
+			if (skipped)
+				continue;
 
 			// fast path, same as previous sort
 			rb_surfaceTable[ *drawSurf->surface ]( drawSurf->surface );
@@ -502,6 +505,17 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 		oldShaderIndex = drawSurf->shaderIndex;
 		R_DecomposeSort( drawSurf, &shader, &sortOrder, &entityNum, &fogNum, &dlighted, &pshadowed );
 		cubemapIndex = drawSurf->cubemapIndex;
+
+		// the view weapon's and the crosshair's in their own pass, after the
+		// fog volumes (RB_DrawSurfs)
+		if ( backEnd.depthHackPass ) {
+			qboolean hack = entityNum != REFENTITYNUM_WORLD && ( backEnd.refdef.entities[entityNum].e.renderfx & RF_DEPTHHACK );
+
+			skipped = ( backEnd.depthHackPass == 1 ) == hack;
+			if ( skipped ) {
+				continue;
+			}
+		}
 
 		//
 		// change the tess parameters if needed
@@ -1396,10 +1410,19 @@ const void	*RB_DrawSurfs( const void *data ) {
 	{
 		float scale;
 
-		RB_RenderDrawSurfList( cmd->drawSurfs, cmd->numDrawSurfs );
-
-		// fog volumes over what's drawn, translucent surfaces too
-		RB_DrawFogVolumes();
+		if ( RB_HasFogLights() ) {
+			// fog volumes over what's drawn, translucent surfaces too, but not
+			// the view weapon or the crosshair (depth hacked, so not in the
+			// depth prepass the fog reads): they go after
+			backEnd.depthHackPass = 1;
+			RB_RenderDrawSurfList( cmd->drawSurfs, cmd->numDrawSurfs );
+			RB_DrawFogVolumes();
+			backEnd.depthHackPass = 2;
+			RB_RenderDrawSurfList( cmd->drawSurfs, cmd->numDrawSurfs );
+			backEnd.depthHackPass = 0;
+		} else {
+			RB_RenderDrawSurfList( cmd->drawSurfs, cmd->numDrawSurfs );
+		}
 
 		if ( r_forceSunScale->value > 0 ) {
 			scale = r_forceSunScale->value;
