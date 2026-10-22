@@ -338,6 +338,12 @@ Cvars that you probably don't care about or shouldn't mess with:
                                      2 - On, printing how many leafs it
                                          marks against the PVS's.
 
+*  `r_roomSaddle`                   - Where the light grid bake divides rooms
+                                   (see LIGHT GRIDS A ROOM below): floods
+                                   meeting at least this deep, of the
+                                   shallower one's deepest, are one room.
+                                   Lower joins more. 0.7 default.
+
 *  `r_fogLightDensity`              - Fog lights' density times this. 8
                                    (default) matches Daikatana's look by
                                    eye; 1 is its fog numbers taken as
@@ -549,6 +555,27 @@ It is then drawn as Doom 3 draws fog lights, not as a Quake 3 fog volume:
   in it, dark shafts behind what blocks them.
 
 Daikatana's fog volumes are converted to these.
+
+
+-------------------------------------------------------------------------------
+  LIGHT GRIDS A ROOM
+-------------------------------------------------------------------------------
+
+The console command 'bakeLightGrid' bakes the light for models in the map
+that's loaded, a grid a room as in RBDOOM-3-BFG, into maps/<map>.lightgrid.
+That file is loaded with the map, and comes before the BSP's light grid.
+
+- The rooms are found from the open space: a watershed over 32-unit voxels.
+  Each voxel's depth is its distance from the walls. The floods fill each
+  room from its middle, and where they meet at a narrow place, such as a
+  doorway, is a border (r_roomSaddle).
+- The light is a lattice every 64 units. Each point gets a cube of the
+  lightmaps seen from there, folded into ambient, directed and a direction.
+- A model is lit from the points of its own room only: the room of the
+  nearest point it sees. No light comes through a wall.
+
+Bake again after the map is recompiled. With developer 1, it also writes the
+voxels' rooms (maps/<map>.rooms) for looking at.
 
 
 -------------------------------------------------------------------------------

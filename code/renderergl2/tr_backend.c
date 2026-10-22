@@ -385,8 +385,9 @@ void RB_BeginDrawingView (void) {
 					   backEnd.refdef.fogColor[ 2 ], 1.0 );
 	}
 
-	// clear to black for cube maps
-	if (tr.renderCubeFbo && backEnd.viewParms.targetFbo == tr.renderCubeFbo)
+	// clear to black for cube maps, and the light grid bake's
+	if ((tr.renderCubeFbo && backEnd.viewParms.targetFbo == tr.renderCubeFbo)
+		|| (tr.lightGridBakeFbo && backEnd.viewParms.targetFbo == tr.lightGridBakeFbo))
 	{
 		clearBits |= GL_COLOR_BUFFER_BIT;
 	}

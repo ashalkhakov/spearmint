@@ -419,7 +419,11 @@ void R_SetupEntityLighting( const trRefdef_t *refdef, trRefEntity_t *ent ) {
 
 	// if NOWORLDMODEL, only use dynamic lights (menu system, etc)
 	// unless the model specifies lighting grid
+	// the rooms' baked light first, where there is any (tr_lightgrid.c)
 	if ( ( !( refdef->rdflags & RDF_NOWORLDMODEL )
+		|| ( ent->e.renderfx & RF_LIGHTING_GRID ) )
+		&& tr.world->latticeLight && R_SetupEntityLightingRooms( ent, tr.world ) ) {
+	} else if ( ( !( refdef->rdflags & RDF_NOWORLDMODEL )
 		|| ( ent->e.renderfx & RF_LIGHTING_GRID ) )
 		&& tr.world->lightGridData ) {
 		R_SetupEntityLightingGrid( ent, tr.world );

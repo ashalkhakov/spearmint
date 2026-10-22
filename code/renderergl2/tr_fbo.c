@@ -346,6 +346,14 @@ void FBO_Init(void)
 		}
 	}
 
+	if (tr.lightGridBakeImage)
+	{
+		tr.lightGridBakeFbo = FBO_Create("_lightgridbake", tr.lightGridBakeImage->width, tr.lightGridBakeImage->height);
+		FBO_AttachImage(tr.lightGridBakeFbo, tr.lightGridBakeImage, GL_COLOR_ATTACHMENT0, 0);
+		FBO_CreateBuffer(tr.lightGridBakeFbo, GL_DEPTH_COMPONENT24_ARB, 0, 0);
+		R_CheckFBO(tr.lightGridBakeFbo);
+	}
+
 	if (tr.dlightShadowAtlasImage)
 	{
 		tr.dlightShadowAtlasFbo = FBO_Create("_dlightshadowatlas", tr.dlightShadowAtlasImage->width, tr.dlightShadowAtlasImage->height);

@@ -140,6 +140,7 @@ cvar_t  *r_fogLights;
 cvar_t  *r_fogLightDensity;
 cvar_t  *r_fogLightScatter;
 cvar_t  *r_portalVis;
+cvar_t  *r_roomSaddle;
 cvar_t  *r_dlightShadows;
 cvar_t  *r_dlightShadowAtlasSize;
 cvar_t  *r_dlightShadowSoftness;
@@ -1332,6 +1333,7 @@ void R_Register( void )
 	r_fogLights = ri.Cvar_Get( "r_fogLights", "1", CVAR_ARCHIVE );
 	r_fogLightDensity = ri.Cvar_Get( "r_fogLightDensity", "8", CVAR_ARCHIVE );
 	r_fogLightScatter = ri.Cvar_Get( "r_fogLightScatter", "1", CVAR_ARCHIVE );
+	r_roomSaddle = ri.Cvar_Get( "r_roomSaddle", "0.7", CVAR_ARCHIVE | CVAR_LATCH );
 	r_portalVis = ri.Cvar_Get( "r_portalVis", "1", CVAR_ARCHIVE );
 	r_dlightShadows = ri.Cvar_Get( "r_dlightShadows", "4", CVAR_ARCHIVE );
 	r_dlightShadowAtlasSize = ri.Cvar_Get( "r_dlightShadowAtlasSize", "2048", CVAR_ARCHIVE | CVAR_LATCH );
@@ -1506,6 +1508,7 @@ void R_Register( void )
 	ri.Cmd_AddCommand( "fontlist", R_FontList_f );
 	ri.Cmd_AddCommand( "modelist", R_ModeList_f );
 	ri.Cmd_AddCommand( "screenshot", R_ScreenShotPNG_f );
+	ri.Cmd_AddCommand( "bakeLightGrid", R_BakeLightGrid_f );
 	ri.Cmd_AddCommand( "screenshotTGA", R_ScreenShotTGA_f );
 	ri.Cmd_AddCommand( "screenshotJPEG", R_ScreenShotJPEG_f );
 	ri.Cmd_AddCommand( "screenshotPNG", R_ScreenShotPNG_f );
@@ -1682,6 +1685,7 @@ void RE_Shutdown( qboolean destroyWindow ) {
 	ri.Cmd_RemoveCommand( "modellist" );
 	ri.Cmd_RemoveCommand( "modelist" );
 	ri.Cmd_RemoveCommand( "screenshot" );
+	ri.Cmd_RemoveCommand( "bakeLightGrid" );
 	ri.Cmd_RemoveCommand( "screenshotTGA" );
 	ri.Cmd_RemoveCommand( "screenshotJPEG" );
 	ri.Cmd_RemoveCommand( "screenshotPNG" );

@@ -1718,6 +1718,7 @@ set(Q3R2OBJ
   code/renderergl2/tr_dlightshadow.c
   code/renderergl2/tr_fogvolume.c
   code/renderergl2/tr_portals.c
+  code/renderergl2/tr_lightgrid.c
   code/renderercommon/tr_font.c
   code/renderergl2/tr_glsl.c
   code/renderergl2/tr_image.c

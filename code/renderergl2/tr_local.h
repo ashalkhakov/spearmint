@@ -1441,6 +1441,14 @@ typedef struct {
 	int			*clusterFirstLeaf;		// each cluster's leafs, node numbers
 	int			*clusterNumLeafs;
 	int			*clusterLeafs;
+	// the rooms: a lattice over the world, each open point labelled with
+	// its room (tr_lightgrid.c), and the light baked at each (NULL none)
+	int			numRooms;
+	vec3_t		latticeOrigin;
+	int			latticeBounds[3];
+	short		*latticeRoom;			// -1 solid
+	byte		*latticeLight;			// 8 bytes a point, as the BSP's light grid, 128 a unit of light
+
 	void		*flowRects;				// a view's flow's scratch (tr_portals.c)
 	byte		*flowSeen;
 	void		*flowSteps;
@@ -1808,6 +1816,7 @@ typedef struct {
 	image_t					*fixedLevelsImage;
 	image_t					*sunShadowDepthImage[4];
 	image_t					*dlightShadowAtlasImage;	// tr_dlightshadow.c
+	image_t					*lightGridBakeImage;		// tr_lightgrid.c
 	image_t                 *screenShadowImage;
 	image_t                 *screenSsaoImage;
 	image_t					*hdrDepthImage;
@@ -1827,6 +1836,7 @@ typedef struct {
 	FBO_t					*targetLevelsFbo;
 	FBO_t					*sunShadowFbo[4];
 	FBO_t					*dlightShadowAtlasFbo;
+	FBO_t					*lightGridBakeFbo;
 	FBO_t					*screenShadowFbo;
 	FBO_t					*screenSsaoFbo;
 	FBO_t					*hdrDepthFbo;
@@ -2093,6 +2103,7 @@ extern  cvar_t  *r_dlightShadowAtlasSize;
 extern  cvar_t  *r_dlightShadowSoftness;
 extern  cvar_t  *r_dlightShadowLightSize;	// PCSS: the lights' size, softening shadows with distance from their casters
 extern  cvar_t  *r_portalVis;			// portal flow for visibility (tr_portals.c)
+
 extern  cvar_t  *r_fogLightDensity;
 extern  cvar_t  *r_fogLightScatter;		// how much dynamic lights brighten fog volumes	// fog lights' density times this
 extern  cvar_t  *r_fogLights;		// fog volumes with "fogLight" shaders drawn per pixel (tr_fogvolume.c)
@@ -2565,6 +2576,13 @@ void R_FogLightHull( fog_t *fog, const vec4_t *planes, int numPlanes );
 void R_RenderDlightShadows( const refdef_t *fd );
 
 void R_PortalizeWorld( world_t *world );
+#define LIGHTGRID_BAKE_FACE		16		// a cube face's size, baking
+#define LIGHTGRID_BAKE_BATCH	4		// points rendered at once
+
+void R_LoadRoomLattice( world_t *world );
+qboolean R_SetupEntityLightingRooms( trRefEntity_t *ent, world_t *world );
+void R_BakeLightGrid_f( void );
+extern  cvar_t  *r_roomSaddle;			// floods meeting this deep (of the shallower) are one room
 qboolean R_FlowView( mnode_t *eyeLeaf, const byte *pvs );
 void RB_DrawFogVolumes( void );
 qboolean RB_HasFogLights( void );

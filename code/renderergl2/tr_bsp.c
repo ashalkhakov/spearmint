@@ -3134,6 +3134,7 @@ void RE_LoadWorldMap( const bspFile_t *bsp ) {
 	R_LoadFogs( bsp );
 	R_LoadVisibility( bsp );
 	R_PortalizeWorld( &s_worldData );
+	R_LoadRoomLattice( &s_worldData );
 	R_LoadLightGrid( bsp );
 
 	// determine vertex light directions

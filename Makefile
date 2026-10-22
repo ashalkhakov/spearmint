@@ -1674,6 +1674,7 @@ Q3R2OBJ = \
   $(B)/renderergl2/tr_dlightshadow.o \
   $(B)/renderergl2/tr_fogvolume.o \
   $(B)/renderergl2/tr_portals.o \
+  $(B)/renderergl2/tr_lightgrid.o \
   $(B)/renderergl2/tr_font.o \
   $(B)/renderergl2/tr_glsl.o \
   $(B)/renderergl2/tr_image.o \

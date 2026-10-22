@@ -2936,6 +2936,9 @@ void R_CreateBuiltinImages( void ) {
 		if (r_drawSunRays->integer)
 			tr.sunRaysImage = R_CreateImage("*sunRays", NULL, width, height, IMGTYPE_COLORALPHA, IMGFLAG_NO_COMPRESSION | IMGFLAG_CLAMPTOEDGE, rgbFormat);
 
+		// the light grid bake's cube faces, float so that overbright light isn't cut (tr_lightgrid.c)
+		tr.lightGridBakeImage = R_CreateImage("*lightgridbake", NULL, LIGHTGRID_BAKE_FACE * 6, LIGHTGRID_BAKE_FACE * LIGHTGRID_BAKE_BATCH, IMGTYPE_COLORALPHA, IMGFLAG_NO_COMPRESSION | IMGFLAG_CLAMPTOEDGE, glRefConfig.textureFloat ? GL_RGBA16F_ARB : GL_RGBA8);
+
 		// the dynamic lights' shadow atlas: depth, compared (tr_dlightshadow.c);
 		// a tiny one without shadows, as the light passes' shadow sampler
 		// needs a depth texture bound even when unused
