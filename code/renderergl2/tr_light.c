@@ -72,7 +72,7 @@ void R_CullDlights( void ) {
 		tr.refdef.num_dlights = MAX_DLIGHTS;
 	}
 
-	tr.refdef.dlightBits = ( 1ULL << tr.refdef.num_dlights ) - 1;
+	tr.refdef.dlightBits = DLIGHT_MASK( tr.refdef.num_dlights );
 #else
 	int i, numDlights, dlightBits;
 	dlight_t    *dl;
@@ -112,7 +112,7 @@ Determine which dynamic lights may effect this bmodel
 void R_DlightBmodel( bmodel_t *bmodel ) {
 	int			i, j;
 	dlight_t	*dl;
-	int			mask;
+	dlightBits_t	mask;
 	msurface_t	*surf;
 
 	// transform all the lights
@@ -139,7 +139,7 @@ void R_DlightBmodel( bmodel_t *bmodel ) {
 		}
 
 		// we need to check this light
-		mask |= 1 << i;
+		mask |= DLIGHT_BIT( i );
 	}
 
 	tr.currentEntity->needDlights = mask;

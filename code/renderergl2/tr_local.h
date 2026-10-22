@@ -94,6 +94,17 @@ typedef struct corona_s {
 	struct	shader_s *shader;
 } corona_t;
 
+// dynamic lights lit at once in a view: renderergl2 marks surfaces with 64
+// bit masks (renderercommon's MAX_DLIGHTS, 32, is renderergl1's). More may
+// be added to a scene (MAX_SCENE_DLIGHTS); R_SelectDlights keeps the ones
+// that matter most to the view.
+#undef MAX_DLIGHTS
+#define MAX_DLIGHTS			64
+#define MAX_SCENE_DLIGHTS	256
+typedef uint64_t dlightBits_t;
+#define DLIGHT_BIT(i)		( (dlightBits_t)1 << (i) )
+#define DLIGHT_MASK(n)		( (n) >= 64 ? ~(dlightBits_t)0 : DLIGHT_BIT( n ) - 1 )
+
 typedef struct dlight_s {
 	vec3_t		origin;
 	vec3_t		color;				// range from 0.0 to 1.0, should be color normalized
@@ -114,7 +125,7 @@ typedef struct {
 
 	float		axisLength;		// compensate for non-normalized axis
 
-	int			needDlights;	// bits for dlights that may touch this bmodel
+	dlightBits_t	needDlights;	// bits for dlights that may touch this bmodel
 	qboolean	lightingCalculated;
 	qboolean	mirrored;		// mirrored matrix, needs reversed culling
 	vec3_t		lightDir;		// normalized direction towards light, in world space
@@ -862,7 +873,7 @@ typedef struct {
 	int			num_entities;
 	trRefEntity_t	*entities;
 
-	int			dlightBits;
+	dlightBits_t			dlightBits;
 	int			num_dlights;
 	struct dlight_s	*dlights;
 
@@ -881,7 +892,7 @@ typedef struct {
 	int			numSkins;
 	struct skin_s *skins;
 
-	unsigned int dlightMask;
+	dlightBits_t dlightMask;
 	int         num_pshadows;
 	struct pshadow_s *pshadows;
 
@@ -1062,7 +1073,7 @@ typedef struct srfBspSurface_s
 	surfaceType_t   surfaceType;
 
 	// dynamic lighting information
-	int				dlightBits;
+	dlightBits_t				dlightBits;
 	int             pshadowBits;
 
 	// culling information
@@ -1107,7 +1118,7 @@ typedef struct
 	surfaceType_t	surfaceType;
 
 	// dynamic lighting information
-	int				dlightBits;
+	dlightBits_t				dlightBits;
 	int             pshadowBits;
 
 	int             numIndexes;
@@ -1345,7 +1356,7 @@ typedef struct {
 	int			numsurfaces;
 	msurface_t	*surfaces;
 	int         *surfacesViewCount;
-	int         *surfacesDlightBits;
+	dlightBits_t *surfacesDlightBits;
 	int			*surfacesPshadowBits;
 
 	int			nummarksurfaces;
@@ -2344,7 +2355,7 @@ typedef struct shaderCommands_s
 	int			fogNum;
 	int         cubemapIndex;
 
-	int			dlightBits;	// or together of all vertexDlightBits
+	dlightBits_t			dlightBits;	// or together of all vertexDlightBits
 	int         pshadowBits;
 
 	int			firstIndex;
@@ -2834,7 +2845,7 @@ typedef enum {
 // contained in a backEndData_t
 typedef struct {
 	drawSurf_t	drawSurfs[MAX_DRAWSURFS];
-	dlight_t	dlights[MAX_DLIGHTS];
+	dlight_t	dlights[MAX_SCENE_DLIGHTS];
 	corona_t	coronas[MAX_CORONAS];
 	trRefEntity_t	entities[MAX_REFENTITIES];
 	skin_t		skins[MAX_SKINS];

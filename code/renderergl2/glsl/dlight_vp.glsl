@@ -17,6 +17,9 @@ uniform mat4   u_ModelViewProjectionMatrix;
 
 varying vec2   var_Tex1;
 varying vec4   var_Color;
+varying vec3   var_DlightDist;	// the Q3 dlight's, per pixel (dlight_fp.glsl)
+varying vec3   var_Normal;
+varying float  var_PerPixel;
 
 #if defined(USE_DEFORM_VERTEXES)
 vec3 DeformPosition(const vec3 pos, const vec3 normal, const vec2 st)
@@ -126,12 +129,17 @@ void main()
 	}
 	else
 	{
-		// Q3 cylinder dlight with texture
+		// Q3 cylinder dlight with texture, its falloff and facing per pixel
 		var_Tex1 = dist.xy * u_DlightInfo.a + vec2(0.5);
-
-		dlightmod = step(0.0, dot(dist, normal));
-		dlightmod *= clamp(u_Intensity * 2.0 * (1.0 - abs(dist.z) * u_DlightInfo.a), 0.0, 1.0);
+		var_DlightDist = dist;
+		var_Normal = normal;
+		var_PerPixel = 1.0;
+		var_Color = u_Color;
+		return;
 	}
 
+	var_DlightDist = vec3(0.0);
+	var_Normal = normal;
+	var_PerPixel = 0.0;
 	var_Color = u_Color * dlightmod;
 }

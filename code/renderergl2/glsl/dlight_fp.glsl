@@ -3,15 +3,31 @@ uniform sampler2D u_DiffuseMap;
 uniform int       u_AlphaTest;
 uniform float     u_AlphaTestRef;
 
+uniform vec4      u_DlightInfo;
+uniform float     u_Intensity;
+
 varying vec2      var_Tex1;
 varying vec4      var_Color;
+varying vec3      var_DlightDist;
+varying vec3      var_Normal;
+varying float     var_PerPixel;
 
 
 void main()
 {
 	vec4 color = texture2D(u_DiffuseMap, var_Tex1);
+	vec4 lightColor = var_Color;
 
-	float alpha = color.a * var_Color.a;
+	// a Q3 dlight: its depth falloff and the surface's facing here, not
+	// interpolated from the vertexes (which breaks up on big polygons)
+	if (var_PerPixel > 0.5)
+	{
+		float dlightmod = step(0.0, dot(var_DlightDist, var_Normal));
+		dlightmod *= clamp(u_Intensity * 2.0 * (1.0 - abs(var_DlightDist.z) * u_DlightInfo.a), 0.0, 1.0);
+		lightColor *= dlightmod;
+	}
+
+	float alpha = color.a * lightColor.a;
 	if (u_AlphaTest == U_ATEST_EQUAL)
 	{
 		if (alpha != u_AlphaTestRef)
@@ -43,6 +59,6 @@ void main()
 			discard;
 	}
 	
-	gl_FragColor.rgb = color.rgb * var_Color.rgb;
+	gl_FragColor.rgb = color.rgb * lightColor.rgb;
 	gl_FragColor.a = alpha;
 }

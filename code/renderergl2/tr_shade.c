@@ -382,7 +382,7 @@ static void ProjectDlightTexture( void ) {
 		shaderProgram_t *sp;
 		vec4_t vector;
 
-		if ( !( tess.dlightBits & ( 1 << l ) ) ) {
+		if ( !( tess.dlightBits & DLIGHT_BIT( l ) ) ) {
 			continue;	// this surface definitely doesn't have any of this light
 		}
 
@@ -913,7 +913,7 @@ static void ForwardDlight( void ) {
 		vec4_t vector;
 		vec4_t texMatrix[8];
 
-		if ( !( tess.dlightBits & ( 1 << l ) ) ) {
+		if ( !( tess.dlightBits & DLIGHT_BIT( l ) ) ) {
 			continue;	// this surface definitely doesn't have any of this light
 		}
 

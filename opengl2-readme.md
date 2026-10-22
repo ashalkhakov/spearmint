@@ -326,9 +326,16 @@ Cvars that have broken bits:
 
 *  `r_dlightMode`                   - Change how dynamic lights look.
                                      0 - Quake 3 style dlights, fake
-                                         brightening. (default)
+                                         brightening.
                                      1 - Actual lighting, no shadows.
+                                         (default) Surfaces it can't light
+                                         this way (several stages) get
+                                         Quake 3's, done per pixel.
                                      2 - Light and shadows. (broken)
+
+                                   Up to 256 dynamic lights can be added to
+                                   a scene; the 64 that matter most to the
+                                   view (bright, big and near) are lit.
 
 *  `r_pshadowDist`                  - Virtual camera distance when creating shadowmaps for projected shadows.  Deprecated.
 

@@ -469,6 +469,59 @@ void RE_AddRefEntityToScene( const refEntity_t *ent, int entBufSize, int numVert
 
 /*
 =====================
+R_SelectDlights
+
+more lights in the scene than are lit at once (MAX_DLIGHTS): the ones that
+matter most to the view first, the rest dropped. A light matters by how
+bright and big it is over how far it is from the eye, its directed and
+"forced" ones always first.
+=====================
+*/
+static float R_DlightImportance( const dlight_t *dl, const vec3_t eye ) {
+	float	dist, bright;
+
+	if ( dl->flags & ( REF_DIRECTED_DLIGHT | REF_FORCE_DLIGHT ) ) {
+		return 1e30f;
+	}
+	dist = MAX( Distance( dl->origin, eye ) - dl->radius, 1.0f );
+	bright = dl->intensity * MAX( dl->color[0], MAX( dl->color[1], dl->color[2] ) );
+	return bright * dl->radius / dist;
+}
+
+static void R_SelectDlights( const refdef_t *fd ) {
+	int		i, j;
+	float	score[MAX_SCENE_DLIGHTS];
+
+	if ( tr.refdef.num_dlights <= MAX_DLIGHTS ) {
+		return;
+	}
+	for ( i = 0; i < tr.refdef.num_dlights; i++ ) {
+		score[i] = R_DlightImportance( &tr.refdef.dlights[i], fd->vieworg );
+	}
+	// the MAX_DLIGHTS best to the front (a partial selection sort)
+	for ( i = 0; i < MAX_DLIGHTS; i++ ) {
+		int best = i;
+
+		for ( j = i + 1; j < tr.refdef.num_dlights; j++ ) {
+			if ( score[j] > score[best] ) {
+				best = j;
+			}
+		}
+		if ( best != i ) {
+			dlight_t	dl = tr.refdef.dlights[i];
+			float		sc = score[i];
+
+			tr.refdef.dlights[i] = tr.refdef.dlights[best];
+			tr.refdef.dlights[best] = dl;
+			score[i] = score[best];
+			score[best] = sc;
+		}
+	}
+	tr.refdef.num_dlights = MAX_DLIGHTS;
+}
+
+/*
+=====================
 RE_AddDynamicLightToScene
 
 =====================
@@ -477,7 +530,7 @@ void RE_AddDynamicLightToScene( const vec3_t org, float radius, float intensity,
 	dlight_t	*dl;
 
 	// early out
-	if ( !tr.registered || r_numdlights >= MAX_DLIGHTS || radius <= 0 || intensity <= 0 ) {
+	if ( !tr.registered || r_numdlights >= MAX_SCENE_DLIGHTS || radius <= 0 || intensity <= 0 ) {
 		return;
 	}
 
@@ -738,6 +791,7 @@ void RE_BeginScene(const refdef_t *fd)
 	tr.refdef.num_dlights = r_numdlights - r_firstSceneDlight;
 	tr.refdef.dlights = &backEndData->dlights[r_firstSceneDlight];
 	tr.refdef.dlightBits = 0;
+	R_SelectDlights( fd );
 
 	tr.refdef.num_coronas = r_numcoronas - r_firstSceneCorona;
 	tr.refdef.coronas = &backEndData->coronas[r_firstSceneCorona];
