@@ -616,7 +616,10 @@ void RE_AddSpotLightToScene( const vec3_t org, const vec3_t dir, float radius, f
 		return;
 	}
 	dl = &backEndData->dlights[r_numdlights - 1];
-	VectorNormalize2( dir, dl->dir );
+	if ( VectorNormalize2( dir, dl->dir ) == 0 ) {
+		dl->flags &= ~REF_SPOT_DLIGHT;		// no way to point: a point light
+		return;
+	}
 	dl->spotCos = cos( DEG2RAD( Com_Clamp( 1.0f, 89.0f, cone ) ) );
 }
 
