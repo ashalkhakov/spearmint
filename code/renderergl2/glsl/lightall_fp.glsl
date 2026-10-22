@@ -53,14 +53,29 @@ uniform vec4      u_SpotInfo;		// a spot light's direction and cone cosine; w -2
 
 // its shadow map in the atlas (tr_dlightshadow.c)
 uniform vec4      u_LightOrigin;
-uniform sampler2DShadow u_DlightShadowMap;
+uniform sampler2D u_DlightShadowMap;		// depths, read as they are
 uniform vec4      u_DlightShadowMvps[24];	// a face's world to clip matrix, 4 columns each
 uniform vec4      u_DlightShadowTiles[6];	// a face's place in the atlas
-uniform vec4      u_DlightShadowInfo;		// faces (0 none), softness in texels, 1 / atlas size, depth bias
+uniform vec4      u_DlightShadowInfo;		// faces (0 none), least softness in texels, 1 / atlas size
+uniform vec4      u_DlightShadowInfo2;		// near, far, light size, its faces' half fov's tangent
 
-// how lit a point is by the light, 0 to 1: the face it's in (the major axis
-// from the light, -X +X -Y +Y -Z +Z, or a spot light's one), a little out
-// along the surface against acne, eight taps softening the edge
+const vec2 shadowTaps[8] = vec2[8](vec2(-0.613, 0.617), vec2(0.170, -0.040), vec2(-0.299, -0.792), vec2(0.645, 0.493),
+                                   vec2(-0.651, 0.718), vec2(0.421, 0.027), vec2(-0.817, -0.271), vec2(0.977, -0.108));
+
+// a stored depth's distance from the light, along its face
+float ShadowDistance(vec2 uv)
+{
+	float z = texture2D(u_DlightShadowMap, uv).r * 2.0 - 1.0;
+	float n = u_DlightShadowInfo2.x, f = u_DlightShadowInfo2.y;
+
+	return 2.0 * n * f / (f + n - z * (f - n));
+}
+
+// how lit a point is by the light, 0 to 1 (The Dark Mod's soft shadows,
+// PCSS): the face it's in (the major axis from the light, -X +X -Y +Y -Z
+// +Z, or a spot light's one), a little out along the surface against acne;
+// the casters near it found, the edge softened by how far they are from it
+// for a light of its size, as a real one's penumbra
 float DlightShadow(vec3 worldPos, vec3 surfNormal)
 {
 	vec3 v = worldPos - u_LightOrigin.xyz;
@@ -81,28 +96,46 @@ float DlightShadow(vec3 worldPos, vec3 surfNormal)
 	vec4 tile = u_DlightShadowTiles[face];
 	float texel = u_DlightShadowInfo.z;
 	float tileTexels = tile.z / texel;
-	vec3 p = worldPos + surfNormal * (3.0 * length(v) / tileTexels);
+	vec3 p = worldPos + surfNormal * (3.0 * u_DlightShadowInfo2.w * length(v) / tileTexels);
 
 	mat4 m = mat4(u_DlightShadowMvps[face * 4], u_DlightShadowMvps[face * 4 + 1],
 	              u_DlightShadowMvps[face * 4 + 2], u_DlightShadowMvps[face * 4 + 3]);
 	vec4 clip = m * vec4(p, 1.0);
-	vec3 ndc = clip.xyz / clip.w;
-	vec2 uv = tile.xy + (ndc.xy * 0.5 + 0.5) * tile.zw;
-	float depth = ndc.z * 0.5 + 0.5 - u_DlightShadowInfo.w;
+	vec2 uv = tile.xy + (clip.xy / clip.w * 0.5 + 0.5) * tile.zw;
+	float receiver = clip.w;
+	float bias = 1.0 + receiver * 0.004;
 
 	vec2 lo = tile.xy + vec2(texel);
 	vec2 hi = tile.xy + tile.zw - vec2(texel);
-	float soft = u_DlightShadowInfo.y * texel;
+	// the atlas's width a world unit takes at the receiver
+	float uvPerUnit = tile.z / (2.0 * receiver * u_DlightShadowInfo2.w);
+	float lightSize = u_DlightShadowInfo2.z;
+
+	// the casters between it and the light, near it
+	float search = max(lightSize * uvPerUnit * 0.5, u_DlightShadowInfo.y * texel);
+	float blockers = 0.0, numBlockers = 0.0;
+	for (int i = 0; i < 8; i++)
+	{
+		float d = ShadowDistance(clamp(uv + shadowTaps[i] * search, lo, hi));
+		if (d < receiver - bias)
+		{
+			blockers += d;
+			numBlockers += 1.0;
+		}
+	}
+	if (numBlockers < 0.5)
+		return 1.0;
+	blockers /= numBlockers;
+
+	// the penumbra: wider the farther the receiver is behind its casters
+	float penumbra = lightSize * (receiver - blockers) / max(blockers, 1.0);
+	float radius = clamp(penumbra * uvPerUnit, u_DlightShadowInfo.y * texel, 16.0 * texel);
 
 	float lit = 0.0;
-	lit += shadow2D(u_DlightShadowMap, vec3(clamp(uv + vec2(-0.613,  0.617) * soft, lo, hi), depth));
-	lit += shadow2D(u_DlightShadowMap, vec3(clamp(uv + vec2( 0.170, -0.040) * soft, lo, hi), depth));
-	lit += shadow2D(u_DlightShadowMap, vec3(clamp(uv + vec2(-0.299, -0.792) * soft, lo, hi), depth));
-	lit += shadow2D(u_DlightShadowMap, vec3(clamp(uv + vec2( 0.645,  0.493) * soft, lo, hi), depth));
-	lit += shadow2D(u_DlightShadowMap, vec3(clamp(uv + vec2(-0.651,  0.718) * soft, lo, hi), depth));
-	lit += shadow2D(u_DlightShadowMap, vec3(clamp(uv + vec2( 0.421,  0.027) * soft, lo, hi), depth));
-	lit += shadow2D(u_DlightShadowMap, vec3(clamp(uv + vec2(-0.817, -0.271) * soft, lo, hi), depth));
-	lit += shadow2D(u_DlightShadowMap, vec3(clamp(uv + vec2( 0.977, -0.108) * soft, lo, hi), depth));
+	for (int i = 0; i < 8; i++)
+	{
+		lit += float(ShadowDistance(clamp(uv + shadowTaps[i] * radius, lo, hi)) >= receiver - bias);
+	}
 	return lit * 0.125;
 }
 #endif

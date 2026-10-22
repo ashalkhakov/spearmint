@@ -143,6 +143,7 @@ cvar_t  *r_portalVis;
 cvar_t  *r_dlightShadows;
 cvar_t  *r_dlightShadowAtlasSize;
 cvar_t  *r_dlightShadowSoftness;
+cvar_t  *r_dlightShadowLightSize;
 cvar_t  *r_ssao;
 
 cvar_t  *r_normalMapping;
@@ -1335,6 +1336,7 @@ void R_Register( void )
 	r_dlightShadows = ri.Cvar_Get( "r_dlightShadows", "4", CVAR_ARCHIVE );
 	r_dlightShadowAtlasSize = ri.Cvar_Get( "r_dlightShadowAtlasSize", "2048", CVAR_ARCHIVE | CVAR_LATCH );
 	r_dlightShadowSoftness = ri.Cvar_Get( "r_dlightShadowSoftness", "1.5", CVAR_ARCHIVE );
+	r_dlightShadowLightSize = ri.Cvar_Get( "r_dlightShadowLightSize", "8", CVAR_ARCHIVE );
 	r_ssao = ri.Cvar_Get( "r_ssao", "0", CVAR_LATCH | CVAR_ARCHIVE );
 
 	r_normalMapping = ri.Cvar_Get( "r_normalMapping", "1", CVAR_ARCHIVE | CVAR_LATCH );

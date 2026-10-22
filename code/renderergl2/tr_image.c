@@ -2942,9 +2942,11 @@ void R_CreateBuiltinImages( void ) {
 		{
 			int size = r_dlightShadows->integer > 0 ? Com_Clamp(512, 8192, r_dlightShadowAtlasSize->integer) : 16;
 
+			// read as depths, not compared (PCSS's blocker search needs them)
 			tr.dlightShadowAtlasImage = R_CreateImage("*dlightshadowatlas", NULL, size, size, IMGTYPE_COLORALPHA, IMGFLAG_NO_COMPRESSION | IMGFLAG_CLAMPTOEDGE, GL_DEPTH_COMPONENT24);
-			qglTextureParameterfEXT(tr.dlightShadowAtlasImage->texnum, GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
-			qglTextureParameterfEXT(tr.dlightShadowAtlasImage->texnum, GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+			qglTextureParameterfEXT(tr.dlightShadowAtlasImage->texnum, GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+			qglTextureParameterfEXT(tr.dlightShadowAtlasImage->texnum, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			qglTextureParameterfEXT(tr.dlightShadowAtlasImage->texnum, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		}
 
 		tr.renderDepthImage  = R_CreateImage("*renderdepth",  NULL, width, height, IMGTYPE_COLORALPHA, IMGFLAG_NO_COMPRESSION | IMGFLAG_CLAMPTOEDGE, GL_DEPTH_COMPONENT24);

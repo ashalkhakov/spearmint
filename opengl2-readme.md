@@ -315,8 +315,13 @@ Cvars that you probably don't care about or shouldn't mess with:
                                    by default; the first light's faces are a
                                    quarter of it each, the next smaller.
 
-*  `r_dlightShadowSoftness`         - How far the shadows' edges are softened,
+*  `r_dlightShadowSoftness`         - The least the shadows' edges are softened,
                                    in texels (1.5 by default).
+
+*  `r_dlightShadowLightSize`        - The lights' size in units (8 by
+                                   default): shadows soften the farther they
+                                   fall from their casters, as a real
+                                   light's penumbra (PCSS), up to 16 texels.
 
 *  `r_fogLightScatter`              - How much the dynamic lights reaching a fog
                                    light brighten it, scattered toward the
@@ -540,7 +545,8 @@ It is then drawn as Doom 3 draws fog lights, not as a Quake 3 fog volume:
 - the surfaces in it and its brush's faces aren't fogged or drawn the Quake 3
   way.
 - dynamic lights reaching it brighten it in its own hue, by their light
-  along each ray through it (up to 8 lights; their shadows aren't in it yet).
+  along each ray through it (up to 8 lights), two of them with their shadows
+  in it, dark shafts behind what blocks them.
 
 Daikatana's fog volumes are converted to these.
 

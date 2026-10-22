@@ -815,6 +815,11 @@ typedef enum
 	UNIFORM_FOGLIGHTDIRS,		// a spot's direction and cone cosine, w -2 a point
 	UNIFORM_FOGNUMLIGHTS,
 
+	UNIFORM_DLIGHTSHADOWINFO2,	// near, far, light size (PCSS), 0
+	UNIFORM_FOGSHADOWMVPS,		// the shadowed fog lights' faces' matrices
+	UNIFORM_FOGSHADOWTILES,		// their places in the atlas
+	UNIFORM_FOGSHADOWLIGHTS,	// which fog light each is, faces, near, far
+
 	UNIFORM_COUNT
 } uniform_t;
 
@@ -919,6 +924,8 @@ typedef struct {
 	int			numDlightShadows;
 	struct {
 		int		numFaces;			// 6 a point light, 1 a spot light
+		float	zNear, zFar;		// its faces' depth range
+		float	tanHalfFov;			// its faces' half field of view's tangent
 		mat4_t	mvp[6];				// world to each face's clip space
 		vec4_t	tiles[6];			// each face's place in the atlas, 0 to 1
 	} dlightShadows[MAX_DLIGHT_SHADOWS];
@@ -970,6 +977,8 @@ typedef struct {
 
 #define MAX_FOGLIGHT_PLANES	32		// u_FogPlanes in fogvolume_fp.glsl
 #define MAX_FOG_DLIGHTS		8		// dynamic lights a fog volume scatters (u_FogLights)
+#define MAX_FOG_SHADOWS		2		// of them, shadowed in it (u_FogShadowMvps)
+#define MAX_UNIFORM_VEC4_ARRAY	64		// GLSL_VEC4_ARRAY uniforms' size at most
 
 typedef enum {
 	VPF_NONE            = 0x00,
@@ -2082,6 +2091,7 @@ extern  cvar_t  *r_depthPrepass;
 extern  cvar_t  *r_dlightShadows;		// dynamic lights with shadow maps at most (tr_dlightshadow.c)
 extern  cvar_t  *r_dlightShadowAtlasSize;
 extern  cvar_t  *r_dlightShadowSoftness;
+extern  cvar_t  *r_dlightShadowLightSize;	// PCSS: the lights' size, softening shadows with distance from their casters
 extern  cvar_t  *r_portalVis;			// portal flow for visibility (tr_portals.c)
 extern  cvar_t  *r_fogLightDensity;
 extern  cvar_t  *r_fogLightScatter;		// how much dynamic lights brighten fog volumes	// fog lights' density times this

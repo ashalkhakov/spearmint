@@ -33,7 +33,9 @@ Suite 120, Rockville, Maryland 20850 USA.
 // point light and one for a spot light, sized by how much they matter, each
 // face rendered as a depth-only view from the light (so the portal flow
 // culls its casters as it does the eye's view, tr_portals.c). The light
-// passes (ForwardDlight, lightall_fp.glsl) pick the face and soften it.
+// passes (ForwardDlight, lightall_fp.glsl) pick the face and soften it as
+// The Dark Mod does (PCSS: wider the farther from the caster); the fog
+// lights (fogvolume_fp.glsl) read it too, for shafts in the fog.
 
 #include "tr_local.h"
 
@@ -187,6 +189,9 @@ void R_RenderDlightShadows( const refdef_t *fd ) {
 			}
 
 			R_RenderView( &parms );
+			tr.refdef.dlightShadows[n].zNear = r_znear->value;
+			tr.refdef.dlightShadows[n].zFar = dl->radius;
+			tr.refdef.dlightShadows[n].tanHalfFov = tan( DEG2RAD( parms.fovX * 0.5f ) );
 
 			// world to this face's clip space, and its place in the atlas
 			Mat4Multiply( tr.viewParms.projectionMatrix, tr.viewParms.world.modelMatrix, tr.refdef.dlightShadows[n].mvp[j] );

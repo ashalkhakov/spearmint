@@ -195,6 +195,11 @@ static uniformInfo_t uniformsInfo[] =
 	{ "u_FogLightColors",  GLSL_VEC4_ARRAY },
 	{ "u_FogLightDirs",    GLSL_VEC4_ARRAY },
 	{ "u_FogNumLights",    GLSL_INT },
+
+	{ "u_DlightShadowInfo2", GLSL_VEC4 },
+	{ "u_FogShadowMvps",   GLSL_VEC4_ARRAY },
+	{ "u_FogShadowTiles",  GLSL_VEC4_ARRAY },
+	{ "u_FogShadowLights", GLSL_VEC4_ARRAY },
 };
 
 typedef enum
@@ -764,7 +769,7 @@ void GLSL_InitUniforms(shaderProgram_t *program)
 				size += sizeof(vec_t) * 16 * glRefConfig.glslMaxAnimatedBones;
 				break;
 			case GLSL_VEC4_ARRAY:
-				size += sizeof(vec4_t) * MAX_FOGLIGHT_PLANES;
+				size += sizeof(vec4_t) * MAX_UNIFORM_VEC4_ARRAY;
 				break;
 			default:
 				break;
@@ -996,7 +1001,7 @@ void GLSL_SetUniformVec4Array(shaderProgram_t *program, int uniformNum, const ve
 		return;
 	}
 
-	count = MIN( count, MAX_FOGLIGHT_PLANES );
+	count = MIN( count, MAX_UNIFORM_VEC4_ARRAY );
 
 	if (!memcmp(v, compare, count * sizeof(vec4_t)))
 	{
@@ -1509,6 +1514,7 @@ void GLSL_InitGPUShaders(void)
 
 	Q_strcat(extradefines, 1024, va("#define MAX_FOGLIGHT_PLANES %d\n", MAX_FOGLIGHT_PLANES));
 	Q_strcat(extradefines, 1024, va("#define MAX_FOG_DLIGHTS %d\n", MAX_FOG_DLIGHTS));
+	Q_strcat(extradefines, 1024, va("#define MAX_FOG_SHADOWS %d\n", MAX_FOG_SHADOWS));
 
 	if (!GLSL_InitGPUShader(&tr.fogVolumeShader, "fogvolume", attribs, qtrue, extradefines, qtrue, fallbackShader_fogvolume_vp, fallbackShader_fogvolume_fp))
 	{
@@ -1518,6 +1524,7 @@ void GLSL_InitGPUShaders(void)
 	GLSL_InitUniforms(&tr.fogVolumeShader);
 
 	GLSL_SetUniformInt(&tr.fogVolumeShader, UNIFORM_SCREENDEPTHMAP, TB_COLORMAP);
+	GLSL_SetUniformInt(&tr.fogVolumeShader, UNIFORM_DLIGHTSHADOWMAP, TB_DLIGHTSHADOW);
 
 	GLSL_FinishGPUShader(&tr.fogVolumeShader);
 

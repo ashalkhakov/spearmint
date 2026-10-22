@@ -1071,7 +1071,10 @@ static void ForwardDlight( void ) {
 			}
 			GLSL_SetUniformVec4Array( sp, UNIFORM_DLIGHTSHADOWMVPS, (const vec4_t *)columns, numFaces * 4 );
 			GLSL_SetUniformVec4Array( sp, UNIFORM_DLIGHTSHADOWTILES, (const vec4_t *)backEnd.refdef.dlightShadows[dl->shadow].tiles, numFaces );
-			VectorSet4( vector, numFaces, r_dlightShadowSoftness->value, 1.0f / tr.dlightShadowAtlasImage->width, 0.0005f );
+			VectorSet4( vector, backEnd.refdef.dlightShadows[dl->shadow].zNear, backEnd.refdef.dlightShadows[dl->shadow].zFar,
+						r_dlightShadowLightSize->value, backEnd.refdef.dlightShadows[dl->shadow].tanHalfFov );
+			GLSL_SetUniformVec4( sp, UNIFORM_DLIGHTSHADOWINFO2, vector );
+			VectorSet4( vector, numFaces, r_dlightShadowSoftness->value, 1.0f / tr.dlightShadowAtlasImage->width, 0 );
 		} else {
 			VectorSet4( vector, 0, 0, 0, 0 );
 		}

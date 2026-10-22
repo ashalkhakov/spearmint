@@ -245,6 +245,9 @@ void RB_DrawFogVolumes( void ) {
 
 			GLSL_BindProgram( sp );
 			GL_BindToTMU( tr.hdrDepthImage, TB_COLORMAP );
+			if ( tr.dlightShadowAtlasImage ) {
+				GL_BindToTMU( tr.dlightShadowAtlasImage, TB_DLIGHTSHADOW );
+			}
 
 			VectorSet4( viewInfo, backEnd.viewParms.zFar / r_znear->value, backEnd.viewParms.zFar,
 						1.0f / tr.hdrDepthImage->width, 1.0f / tr.hdrDepthImage->height );
@@ -258,7 +261,8 @@ void RB_DrawFogVolumes( void ) {
 		// the eye along each ray, fogvolume_fp.glsl)
 		{
 			vec4_t	lights[MAX_FOG_DLIGHTS], colors[MAX_FOG_DLIGHTS], dirs[MAX_FOG_DLIGHTS];
-			int		l, numLights = 0;
+			vec4_t	shadowMvps[MAX_FOG_SHADOWS * 24], shadowTiles[MAX_FOG_SHADOWS * 6], shadowLights[MAX_FOG_SHADOWS];
+			int		l, numLights = 0, numShadows = 0;
 
 			for ( l = 0; l < backEnd.refdef.num_dlights && numLights < MAX_FOG_DLIGHTS && r_fogLightScatter->value > 0; l++ ) {
 				dlight_t	*dl = &backEnd.refdef.dlights[l];
@@ -285,7 +289,27 @@ void RB_DrawFogVolumes( void ) {
 				} else {
 					VectorSet4( dirs[numLights], 0, 0, 1, -2 );
 				}
+				// its shadow in the fog too: dark shafts behind what blocks it
+				if ( dl->shadow >= 0 && dl->shadow < backEnd.refdef.numDlightShadows && numShadows < MAX_FOG_SHADOWS ) {
+					int face, faces = backEnd.refdef.dlightShadows[dl->shadow].numFaces;
+
+					for ( face = 0; face < faces; face++ ) {
+						Com_Memcpy( shadowMvps[numShadows * 24 + face * 4], backEnd.refdef.dlightShadows[dl->shadow].mvp[face], sizeof( mat4_t ) );
+						Vector4Copy( backEnd.refdef.dlightShadows[dl->shadow].tiles[face], shadowTiles[numShadows * 6 + face] );
+					}
+					VectorSet4( shadowLights[numShadows], numLights, faces,
+								backEnd.refdef.dlightShadows[dl->shadow].zNear, backEnd.refdef.dlightShadows[dl->shadow].zFar );
+					numShadows++;
+				}
 				numLights++;
+			}
+			for ( l = numShadows; l < MAX_FOG_SHADOWS; l++ ) {
+				VectorSet4( shadowLights[l], -1, 0, 1, 1 );
+			}
+			GLSL_SetUniformVec4Array( sp, UNIFORM_FOGSHADOWLIGHTS, (const vec4_t *)shadowLights, MAX_FOG_SHADOWS );
+			if ( numShadows ) {
+				GLSL_SetUniformVec4Array( sp, UNIFORM_FOGSHADOWMVPS, (const vec4_t *)shadowMvps, numShadows * 24 );
+				GLSL_SetUniformVec4Array( sp, UNIFORM_FOGSHADOWTILES, (const vec4_t *)shadowTiles, numShadows * 6 );
 			}
 			GLSL_SetUniformInt( sp, UNIFORM_FOGNUMLIGHTS, numLights );
 			if ( numLights ) {

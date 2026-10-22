@@ -21,6 +21,43 @@ uniform vec4   u_FogLightColors[MAX_FOG_DLIGHTS];	// colour times intensity and 
 uniform vec4   u_FogLightDirs[MAX_FOG_DLIGHTS];	// a spot's direction and cone cosine, w -2 a point
 uniform int    u_FogNumLights;
 
+// the shadows of some of them (tr_dlightshadow.c): dark shafts in the fog
+uniform sampler2D u_DlightShadowMap;
+uniform vec4   u_FogShadowMvps[MAX_FOG_SHADOWS * 24];	// a face's world to clip matrix, 4 columns each
+uniform vec4   u_FogShadowTiles[MAX_FOG_SHADOWS * 6];
+uniform vec4   u_FogShadowLights[MAX_FOG_SHADOWS];		// which of the lights (-1 none), faces, near, far
+
+// whether the light reaches a point in the fog, by its shadow map (one tap:
+// the fog's eight samples soften it)
+float FogShadow(int s, vec3 p)
+{
+	vec3 v = p - u_FogLights[int(u_FogShadowLights[s].x)].xyz;
+	int face = 0;
+
+	if (u_FogShadowLights[s].y > 1.5)
+	{
+		vec3 a = abs(v);
+
+		if (a.x >= a.y && a.x >= a.z)
+			face = v.x > 0.0 ? 1 : 0;
+		else if (a.y >= a.z)
+			face = v.y > 0.0 ? 3 : 2;
+		else
+			face = v.z > 0.0 ? 5 : 4;
+	}
+
+	int m0 = s * 24 + face * 4;
+	mat4 m = mat4(u_FogShadowMvps[m0], u_FogShadowMvps[m0 + 1], u_FogShadowMvps[m0 + 2], u_FogShadowMvps[m0 + 3]);
+	vec4 tile = u_FogShadowTiles[s * 6 + face];
+	vec4 clip = m * vec4(p, 1.0);
+	vec2 uv = tile.xy + (clip.xy / clip.w * 0.5 + 0.5) * tile.zw;
+	float z = texture2D(u_DlightShadowMap, uv).r * 2.0 - 1.0;
+	float n = u_FogShadowLights[s].z, f = u_FogShadowLights[s].w;
+	float d = 2.0 * n * f / (f + n - z * (f - n));
+
+	return float(d >= clip.w - 2.0);
+}
+
 varying vec3   var_Position;
 
 // depth is GL_DEPTH_COMPONENT24
@@ -87,6 +124,11 @@ void main()
 				a *= a;
 				if (u_FogLightDirs[l].w > -1.5)
 					a *= smoothstep(u_FogLightDirs[l].w, mix(u_FogLightDirs[l].w, 1.0, 0.3), dot(-toLight / max(dist, 0.001), u_FogLightDirs[l].xyz));
+				for (int sh = 0; sh < MAX_FOG_SHADOWS; sh++)
+				{
+					if (int(u_FogShadowLights[sh].x) == l && a > 0.0)
+						a *= FogShadow(sh, p);
+				}
 				lit += u_FogLightColors[l].rgb * a;
 			}
 		}
