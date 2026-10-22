@@ -150,6 +150,10 @@ void R_FogLightHull( fog_t *fog, const vec4_t *planes, int numPlanes ) {
 
 	ri.Hunk_FreeTempMemory( faces );
 	ri.Hunk_FreeTempMemory( verts );
+
+	ri.Printf( PRINT_DEVELOPER, "fog light %s: %d planes, %d triangles, bounds (%.0f %.0f %.0f) (%.0f %.0f %.0f)\n",
+		fog->shader ? fog->shader->name : "?", numPlanes, numVerts / 3,
+		fog->bounds[0][0], fog->bounds[0][1], fog->bounds[0][2], fog->bounds[1][0], fog->bounds[1][1], fog->bounds[1][2] );
 }
 
 /*
@@ -234,7 +238,7 @@ void RB_DrawFogVolumes( void ) {
 			vec4_t info, color;
 
 			VectorSet4( info, fog->bounds[0][2], fog->bounds[1][2],
-						MAX( 1.0f, fog->shader->fogParms.depthForOpaque ), 0 );
+						MAX( 1.0f, fog->shader->fogParms.depthForOpaque ) / MAX( 0.01f, r_fogLightDensity->value ), 0 );
 			GLSL_SetUniformVec4( sp, UNIFORM_FOGVOLUMEINFO, info );
 			VectorCopy( fog->shader->fogParms.color, color );
 			color[3] = 1.0f;

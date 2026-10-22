@@ -32,10 +32,11 @@ void main()
 	float viewZ = u_ViewInfo.y / mix(u_ViewInfo.x, 1.0, sampleZDivW);
 	float tScene = viewZ / max(dot(dir, u_ViewForward), 0.0001);
 
-	// where the ray goes into the hull: the last plane it crosses inward;
-	// and whether the eye is in it
+	// where the ray goes into the hull: the last plane it crosses inward.
+	// What's seen through it is fogged by the whole run, as Daikatana draws
+	// its fog volume's far faces (a mist slab's bottom) as fog over what's
+	// behind them
 	float tEnter = 0.0;
-	float eyeOut = -1.0;
 	for (int i = 0; i < MAX_FOGLIGHT_PLANES; i++)
 	{
 		if (i >= u_FogNumPlanes)
@@ -43,16 +44,10 @@ void main()
 
 		float eyeDist = dot(u_ViewOrigin, u_FogPlanes[i].xyz) - u_FogPlanes[i].w;
 		float facing = dot(dir, u_FogPlanes[i].xyz);
-		eyeOut = max(eyeOut, eyeDist);
 		if (facing < 0.0)
 			tEnter = max(tEnter, -eyeDist / facing);
 	}
 
-	// from outside, only what's drawn in it is fogged, as Daikatana fogs the
-	// surfaces in its fog's leaves: what's seen through it (a pond's floor
-	// through its murky top) isn't
-	if (eyeOut > 0.0 && tScene > tExit)
-		discard;
 
 	float tEnd = min(tExit, tScene);
 	float len = tEnd - tEnter;
