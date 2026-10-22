@@ -1398,6 +1398,9 @@ const void	*RB_DrawSurfs( const void *data ) {
 
 		RB_RenderDrawSurfList( cmd->drawSurfs, cmd->numDrawSurfs );
 
+		// fog volumes over what's drawn, translucent surfaces too
+		RB_DrawFogVolumes();
+
 		if ( r_forceSunScale->value > 0 ) {
 			scale = r_forceSunScale->value;
 		} else {

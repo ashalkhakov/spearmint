@@ -489,6 +489,8 @@ typedef struct {
 	float		depthForOpaque;
 	float		density;
 	float		farClip;
+	qboolean	fogLight;		// "fogLight" (Doom 3's): a fog volume drawn as one, through
+								// its brush's hull per pixel (tr_fogvolume.c), not on surfaces
 } fogParms_t;
 
 typedef struct shader_s {
@@ -668,7 +670,8 @@ enum
 	GLSL_VEC3,
 	GLSL_VEC4,
 	GLSL_MAT16,
-	GLSL_MAT16_BONEMATRIX
+	GLSL_MAT16_BONEMATRIX,
+	GLSL_VEC4_FOGPLANES
 };
 
 typedef enum
@@ -779,6 +782,10 @@ typedef enum
 	UNIFORM_FIRERISEDIR,
 	UNIFORM_ZFADELOWEST,
 	UNIFORM_ZFADEHIGHEST,
+
+	UNIFORM_FOGPLANES,
+	UNIFORM_FOGNUMPLANES,
+	UNIFORM_FOGVOLUMEINFO,
 
 	UNIFORM_COUNT
 } uniform_t;
@@ -914,7 +921,18 @@ typedef struct {
 	// for clipping distance in fog when outside
 	qboolean	hasSurface;
 	float		surface[4];
+
+	// a fog light's (fogParms_t.fogLight) convex hull: its brush's planes,
+	// pointing out, and its faces as triangles
+	qboolean	fogLight;
+	int			numPlanes;
+	vec4_t		*planes;
+	int			numHullVerts;		// three a triangle
+	vec3_t		*hullVerts;
+	vec4_t		*hullPlanes;		// each triangle's face plane
 } fog_t;
+
+#define MAX_FOGLIGHT_PLANES	32		// u_FogPlanes in fogvolume_fp.glsl
 
 typedef enum {
 	VPF_NONE            = 0x00,
@@ -1784,6 +1802,7 @@ typedef struct {
 	shaderProgram_t tonemapShader;
 	shaderProgram_t calclevels4xShader[2];
 	shaderProgram_t shadowmaskShader;
+	shaderProgram_t fogVolumeShader;
 	shaderProgram_t ssaoShader;
 	shaderProgram_t depthBlurShader[4];
 	shaderProgram_t testcubeShader;
@@ -1994,6 +2013,7 @@ extern  cvar_t  *r_forceAutoExposureMax;
 extern  cvar_t  *r_cameraExposure;
 
 extern  cvar_t  *r_depthPrepass;
+extern  cvar_t  *r_fogLights;		// fog volumes with "fogLight" shaders drawn per pixel (tr_fogvolume.c)
 extern  cvar_t  *r_ssao;
 
 extern  cvar_t  *r_normalMapping;
@@ -2449,6 +2469,17 @@ void R_BuildCloudData( shaderCommands_t *shader );
 void R_InitSkyTexCoords( float cloudLayerHeight );
 void R_DrawSkyBox( shaderCommands_t *shader );
 void RB_DrawSun( float scale, shader_t *shader );
+
+/*
+============================================================
+
+FOG VOLUMES, tr_fogvolume.c
+
+============================================================
+*/
+
+void R_FogLightHull( fog_t *fog, const vec4_t *planes, int numPlanes );
+void RB_DrawFogVolumes( void );
 void RB_ClipSkyPolygons( shaderCommands_t *shader );
 
 /*
@@ -2536,6 +2567,7 @@ void GLSL_SetUniformVec3(shaderProgram_t *program, int uniformNum, const vec3_t 
 void GLSL_SetUniformVec4(shaderProgram_t *program, int uniformNum, const vec4_t v);
 void GLSL_SetUniformMat4(shaderProgram_t *program, int uniformNum, const mat4_t matrix);
 void GLSL_SetUniformMat4BoneMatrix(shaderProgram_t *program, int uniformNum, /*const*/ mat4_t *matrix, int numMatricies);
+void GLSL_SetUniformVec4FogPlanes(shaderProgram_t *program, int uniformNum, const vec4_t *v, int count);
 
 shaderProgram_t *GLSL_GetGenericShaderProgram(int stage, fogType_t fogType);
 

@@ -295,6 +295,13 @@ Cvars that you probably don't care about or shouldn't mess with:
                                      0 - No.
                                      1 - Yes. (default)
 
+*  `r_fogLights`                    - Draw fog volumes whose shader says
+                                   'fogLight' through their hull, per pixel
+                                   (see FOG LIGHTS below). Needs
+                                   r_depthPrepass.
+                                     0 - No, they aren't drawn.
+                                     1 - Yes. (default)
+
 *  `r_mergeLightmaps`               - Merge the small (128x128) lightmaps into 
                                    2 or fewer giant (4096x4096) lightmaps.
                                    Easy speedup.
@@ -463,6 +470,34 @@ Note the new keyword, 'vertexLit' after rgbGen.  This is analogous to
 'rgbGen vertex', except a light direction will be determined from the lightgrid
 and used with the normal and specular maps.  'exactVertexLit' exists as well,
 and is the equivalent for 'exactVertex'.
+
+
+-------------------------------------------------------------------------------
+  FOG LIGHTS
+-------------------------------------------------------------------------------
+
+A fog volume's shader can say 'fogLight' (Doom 3's name) after its fogParms:
+
+    fogs/swampmist
+    {
+        surfaceparm trans
+        surfaceparm nonsolid
+        surfaceparm fog
+        surfaceparm nolightmap
+        fogparms ( 0.78 0.99 0.4 ) 1000
+        fogLight
+    }
+
+It is then drawn as Doom 3 draws fog lights, not as a Quake 3 fog volume:
+- each pixel is fogged by how much of its view ray is inside the brush, up to
+  what's drawn there, so from inside it or outside, through any brush shape
+  (not only boxes), and with no visible side needed;
+- the fog is thicker the lower the ray runs in the volume (Daikatana's
+  volume fog); fogParms' depth is how far through it is opaque;
+- the surfaces in it and its brush's faces aren't fogged or drawn the Quake 3
+  way.
+
+Daikatana's fog volumes are converted to these.
 
 
 -------------------------------------------------------------------------------

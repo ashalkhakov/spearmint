@@ -3035,6 +3035,14 @@ static qboolean ParseShader( char **text )
 			// note: skips any old gradient directions
 			continue;
 		}
+		// fogLight (Doom 3's): with fogParms, a fog volume fogged through
+		// its brush's hull per pixel, not on surfaces (tr_fogvolume.c); its
+		// fogParms' depth is how far through it is opaque
+		else if ( !Q_stricmp( token, "fogLight" ) )
+		{
+			shader.fogParms.fogLight = qtrue;
+			continue;
+		}
 		// portal
 		else if ( !Q_stricmp(token, "portal") )
 		{

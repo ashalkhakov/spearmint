@@ -1671,6 +1671,7 @@ Q3R2OBJ = \
   $(B)/renderergl2/tr_extensions.o \
   $(B)/renderergl2/tr_fbo.o \
   $(B)/renderergl2/tr_flares.o \
+  $(B)/renderergl2/tr_fogvolume.o \
   $(B)/renderergl2/tr_font.o \
   $(B)/renderergl2/tr_glsl.o \
   $(B)/renderergl2/tr_image.o \
@@ -1715,6 +1716,8 @@ Q3R2STRINGOBJ = \
   $(B)/renderergl2/glsl/down4x_fp.o \
   $(B)/renderergl2/glsl/down4x_vp.o \
   $(B)/renderergl2/glsl/fogpass_fp.o \
+  $(B)/renderergl2/glsl/fogvolume_fp.o \
+  $(B)/renderergl2/glsl/fogvolume_vp.o \
   $(B)/renderergl2/glsl/fogpass_vp.o \
   $(B)/renderergl2/glsl/generic_fp.o \
   $(B)/renderergl2/glsl/generic_vp.o \

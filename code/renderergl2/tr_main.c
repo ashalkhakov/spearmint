@@ -1765,6 +1765,15 @@ void R_AddEntDrawSurf( trRefEntity_t *ent, surfaceType_t *surface, shader_t *sha
 	shaderSort_t	shaderSort;
 	int				i;
 
+	// a fog light fogs through its hull, not on the surfaces in it, and its
+	// brush's own faces aren't drawn (tr_fogvolume.c)
+	if ( shader->fogParms.fogLight ) {
+		return;
+	}
+	if ( fogIndex > 0 && tr.world && fogIndex < tr.world->numfogs && tr.world->fogs[fogIndex].fogLight ) {
+		fogIndex = 0;
+	}
+
 	if ( ent && ( ent->e.renderfx & RF_FORCE_ENT_ALPHA ) ) {
 		shaderSort = SS_BLEND0;
 	} else {

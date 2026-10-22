@@ -1715,6 +1715,7 @@ set(Q3R2OBJ
   code/renderergl2/tr_extensions.c
   code/renderergl2/tr_fbo.c
   code/renderergl2/tr_flares.c
+  code/renderergl2/tr_fogvolume.c
   code/renderercommon/tr_font.c
   code/renderergl2/tr_glsl.c
   code/renderergl2/tr_image.c
@@ -1770,6 +1771,8 @@ set(Q3R2STRINGSRC
   code/renderergl2/glsl/pshadow_vp
   code/renderergl2/glsl/shadowfill_fp
   code/renderergl2/glsl/shadowfill_vp
+  code/renderergl2/glsl/fogvolume_fp
+  code/renderergl2/glsl/fogvolume_vp
   code/renderergl2/glsl/shadowmask_fp
   code/renderergl2/glsl/shadowmask_vp
   code/renderergl2/glsl/ssao_fp

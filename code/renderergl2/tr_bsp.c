@@ -2357,7 +2357,7 @@ static	void R_LoadFogs( const bspFile_t *bsp ) {
 	int			i, j;
 	fog_t		*out;
 	dfog_t		*fogs;
-	dbrush_t 	*brushes, *brush;
+	dbrush_t 	*brushes, *brush = NULL;
 	dbrushside_t	*sides;
 	int			count, brushesCount, sidesCount;
 	int			sideNum;
@@ -2477,6 +2477,19 @@ static	void R_LoadFogs( const bspFile_t *bsp ) {
 				VectorSubtract( vec3_origin, s_worldData.planes[ planeNum ].normal, out->surface );
 				out->surface[3] = -s_worldData.planes[ planeNum ].dist;
 			}
+		}
+
+		// a fog light (tr_fogvolume.c): its hull is all of its brush's sides
+		if ( shader->fogParms.fogLight && out->originalBrushNumber != -1 ) {
+			vec4_t	planes[MAX_FOGLIGHT_PLANES];
+			int		numSides = MIN( LittleLong( brush->numSides ), MAX_FOGLIGHT_PLANES );
+
+			for ( j = 0; j < numSides; j++ ) {
+				planeNum = LittleLong( sides[ firstSide + j ].planeNum );
+				VectorCopy( s_worldData.planes[ planeNum ].normal, planes[j] );
+				planes[j][3] = s_worldData.planes[ planeNum ].dist;
+			}
+			R_FogLightHull( out, (const vec4_t *)planes, numSides );
 		}
 
 		out++;
