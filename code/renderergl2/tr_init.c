@@ -140,6 +140,8 @@ cvar_t  *r_fogLights;
 cvar_t  *r_fogLightDensity;
 cvar_t  *r_fogLightScatter;
 cvar_t  *r_portalVis;
+cvar_t  *r_noLightmaps;
+cvar_t  *r_worldAmbient;
 cvar_t  *r_roomSaddle;
 cvar_t  *r_dlightShadows;
 cvar_t  *r_dlightShadowAtlasSize;
@@ -1335,6 +1337,8 @@ void R_Register( void )
 	r_fogLightScatter = ri.Cvar_Get( "r_fogLightScatter", "1", CVAR_ARCHIVE );
 	r_roomSaddle = ri.Cvar_Get( "r_roomSaddle", "0.7", CVAR_ARCHIVE | CVAR_LATCH );
 	r_portalVis = ri.Cvar_Get( "r_portalVis", "1", CVAR_ARCHIVE );
+	r_noLightmaps = ri.Cvar_Get( "r_noLightmaps", "0", CVAR_ARCHIVE );
+	r_worldAmbient = ri.Cvar_Get( "r_worldAmbient", "0.1", CVAR_ARCHIVE );
 	r_dlightShadows = ri.Cvar_Get( "r_dlightShadows", "4", CVAR_ARCHIVE );
 	r_dlightShadowAtlasSize = ri.Cvar_Get( "r_dlightShadowAtlasSize", "2048", CVAR_ARCHIVE | CVAR_LATCH );
 	r_dlightShadowSoftness = ri.Cvar_Get( "r_dlightShadowSoftness", "1.5", CVAR_ARCHIVE );

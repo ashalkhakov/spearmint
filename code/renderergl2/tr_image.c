@@ -2882,6 +2882,10 @@ void R_CreateBuiltinImages( void ) {
 	Com_Memset( data, 255, sizeof( data ) );
 	tr.whiteImage = R_CreateImage("*white", (byte *)data, 8, 8, IMGTYPE_COLORALPHA, IMGFLAG_NONE, 0);
 
+	// r_noLightmaps' lightmap, r_worldAmbient's grey (set as it's used, tr_shade.c)
+	tr.worldAmbientImage = R_CreateImage("*worldambient", (byte *)data, 1, 1, IMGTYPE_COLORALPHA, IMGFLAG_NONE, 0);
+	r_worldAmbient->modified = qtrue;
+
 	if (r_dlightMode->integer >= 2)
 	{
 		for( x = 0; x < MAX_DLIGHTS; x++)

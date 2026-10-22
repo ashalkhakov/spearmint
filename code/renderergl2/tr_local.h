@@ -1817,6 +1817,7 @@ typedef struct {
 	image_t					*sunShadowDepthImage[4];
 	image_t					*dlightShadowAtlasImage;	// tr_dlightshadow.c
 	image_t					*lightGridBakeImage;		// tr_lightgrid.c
+	image_t					*worldAmbientImage;			// r_noLightmaps' lightmap, 1x1
 	image_t                 *screenShadowImage;
 	image_t                 *screenSsaoImage;
 	image_t					*hdrDepthImage;
@@ -2102,7 +2103,9 @@ extern  cvar_t  *r_dlightShadows;		// dynamic lights with shadow maps at most (t
 extern  cvar_t  *r_dlightShadowAtlasSize;
 extern  cvar_t  *r_dlightShadowSoftness;
 extern  cvar_t  *r_dlightShadowLightSize;	// PCSS: the lights' size, softening shadows with distance from their casters
-extern  cvar_t  *r_portalVis;			// portal flow for visibility (tr_portals.c)
+extern  cvar_t  *r_portalVis;
+extern  cvar_t  *r_noLightmaps;			// the world without its lightmaps: r_worldAmbient and the dynamic lights
+extern  cvar_t  *r_worldAmbient;			// portal flow for visibility (tr_portals.c)
 
 extern  cvar_t  *r_fogLightDensity;
 extern  cvar_t  *r_fogLightScatter;		// how much dynamic lights brighten fog volumes	// fog lights' density times this

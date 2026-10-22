@@ -338,6 +338,14 @@ Cvars that you probably don't care about or shouldn't mess with:
                                      2 - On, printing how many leafs it
                                          marks against the PVS's.
 
+*  `r_noLightmaps`                  - The world without its lightmaps: lit by
+                                   r_worldAmbient and the dynamic lights
+                                   alone (a map's steady lights, which the
+                                   game adds only then). 0 default.
+
+*  `r_worldAmbient`                 - The world's light with r_noLightmaps
+                                   1, a grey from 0 to 1. 0.1 default.
+
 *  `r_roomSaddle`                   - Where the light grid bake divides rooms
                                    (see LIGHT GRIDS A ROOM below): floods
                                    meeting at least this deep, of the

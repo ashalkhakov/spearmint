@@ -1380,6 +1380,28 @@ static unsigned int RB_CalcShaderVertexAttribs( shaderCommands_t *input )
 	return vertexAttribs;
 }
 
+/*
+================
+R_BindLightmapToTMU
+
+a stage's lightmap, or with r_noLightmaps the flat r_worldAmbient in its place
+================
+*/
+static void R_BindLightmapToTMU( textureBundle_t *bundle, int tmu ) {
+	if ( r_noLightmaps->integer && bundle->isLightmap ) {
+		if ( r_worldAmbient->modified ) {
+			byte c = (byte)Com_Clamp( 0, 255, r_worldAmbient->value * 255.0f );
+			byte pixel[4] = { c, c, c, 255 };
+
+			R_UpdateSubImage( tr.worldAmbientImage, pixel, 0, 0, 1, 1, GL_RGBA8 );
+			r_worldAmbient->modified = qfalse;
+		}
+		GL_BindToTMU( tr.worldAmbientImage, tmu );
+		return;
+	}
+	R_BindAnimatedImageToTMU( bundle, tmu );
+}
+
 static void RB_IterateStagesGeneric( shaderCommands_t *input )
 {
 	int stage;
@@ -1824,7 +1846,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 					R_BindAnimatedImageToTMU( &pStage->bundle[TB_DIFFUSEMAP], TB_DIFFUSEMAP);
 
 				if (pStage->bundle[TB_LIGHTMAP].image[0])
-					R_BindAnimatedImageToTMU( &pStage->bundle[TB_LIGHTMAP], TB_LIGHTMAP);
+					R_BindLightmapToTMU( &pStage->bundle[TB_LIGHTMAP], TB_LIGHTMAP);
 
 				// bind textures that are sampled and used in the glsl shader, and
 				// bind whiteImage to textures that are sampled but zeroed in the glsl shader
@@ -1880,7 +1902,7 @@ static void RB_IterateStagesGeneric( shaderCommands_t *input )
 				GLSL_SetUniformInt(sp, UNIFORM_TEXTURE1ENV, pStage->multitextureEnv);
 			}
 
-			R_BindAnimatedImageToTMU( &pStage->bundle[1], 1 );
+			R_BindLightmapToTMU( &pStage->bundle[1], 1 );
 		}
 		else 
 		{
