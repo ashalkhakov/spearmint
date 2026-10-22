@@ -113,6 +113,8 @@ typedef struct dlight_s {
 	float		intensity;			// 1.0 = fullbright, > 1.0 = overbright
 	int			flags;
 	struct shader_s	*dlshader;
+	vec3_t		dir;				// a spot light's (REF_SPOT_DLIGHT), unit
+	float		spotCos;			// cosine of its cone's half angle
 
 	vec3_t		transformed;		// origin in local coordinate system
 } dlight_t;
@@ -797,6 +799,8 @@ typedef enum
 	UNIFORM_FOGPLANES,
 	UNIFORM_FOGNUMPLANES,
 	UNIFORM_FOGVOLUMEINFO,
+
+	UNIFORM_SPOTINFO,		// a spot light's direction and cone cosine, w -2 for a point light
 
 	UNIFORM_COUNT
 } uniform_t;
@@ -2603,6 +2607,7 @@ void RE_AddAdditiveLightToScene( const vec3_t org, float radius, float intensity
 void RE_AddVertexLightToScene( const vec3_t org, float radius, float intensity, float r, float g, float b );
 void RE_AddJuniorLightToScene( const vec3_t org, float radius, float intensity, float r, float g, float b );
 void RE_AddDirectedLightToScene( const vec3_t normal, float intensity, float r, float g, float b );
+void RE_AddSpotLightToScene( const vec3_t org, const vec3_t dir, float radius, float cone, float intensity, float r, float g, float b, qhandle_t hShader );
 void RE_AddCoronaToScene( const vec3_t org, float r, float g, float b, float scale, int id, qboolean visible, qhandle_t hShader );
 void RE_BeginScene( const refdef_t *fd );
 void RE_RenderScene( const refdef_t *fd, int fdSize );

@@ -5,6 +5,7 @@ uniform float     u_AlphaTestRef;
 
 uniform vec4      u_DlightInfo;
 uniform float     u_Intensity;
+uniform vec4      u_SpotInfo;		// a spot light's direction and cone cosine; w -2 for a point light
 
 varying vec2      var_Tex1;
 varying vec4      var_Color;
@@ -24,6 +25,8 @@ void main()
 	{
 		float dlightmod = step(0.0, dot(var_DlightDist, var_Normal));
 		dlightmod *= clamp(u_Intensity * 2.0 * (1.0 - abs(var_DlightDist.z) * u_DlightInfo.a), 0.0, 1.0);
+		if (u_SpotInfo.w > -1.5)
+			dlightmod *= smoothstep(u_SpotInfo.w, mix(u_SpotInfo.w, 1.0, 0.3), dot(-normalize(var_DlightDist), u_SpotInfo.xyz));
 		lightColor *= dlightmod;
 	}
 

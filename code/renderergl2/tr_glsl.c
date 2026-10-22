@@ -183,6 +183,8 @@ static uniformInfo_t uniformsInfo[] =
 	{ "u_FogPlanes",      GLSL_VEC4_FOGPLANES },
 	{ "u_FogNumPlanes",   GLSL_INT },
 	{ "u_FogVolumeInfo",  GLSL_VEC4 },
+
+	{ "u_SpotInfo",       GLSL_VEC4 },
 };
 
 typedef enum

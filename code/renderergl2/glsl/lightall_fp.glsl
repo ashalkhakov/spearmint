@@ -48,6 +48,10 @@ uniform vec4      u_CubeMapInfo;
 uniform int       u_AlphaTest;
 uniform float     u_AlphaTestRef;
 
+#if defined(USE_LIGHT_VECTOR)
+uniform vec4      u_SpotInfo;		// a spot light's direction and cone cosine; w -2 for a point light
+#endif
+
 varying vec4      var_TexCoords;
 
 varying vec4      var_Color;
@@ -338,6 +342,9 @@ void main()
 
   #if defined(USE_LIGHT_VECTOR)
 	attenuation  = CalcLightAttenuation(float(var_LightDir.w > 0.0), var_LightDir.w / sqrLightDist);
+	// a spot light: only within its cone, softly at the edge
+	if (u_SpotInfo.w > -1.5)
+		attenuation *= smoothstep(u_SpotInfo.w, mix(u_SpotInfo.w, 1.0, 0.3), dot(-L, u_SpotInfo.xyz));
   #else
 	attenuation  = 1.0;
   #endif

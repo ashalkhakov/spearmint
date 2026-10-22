@@ -1528,6 +1528,13 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		return 0;
 	case CG_R_MODELBOUNDS:
 		return re.ModelBounds( args[1], VMA(2), VMA(3), args[4], args[5], VMF(6) );
+	case CG_R_ADDSPOTLIGHTTOSCENE:
+		if ( re.AddSpotLightToScene ) {
+			re.AddSpotLightToScene( VMA(1), VMA(2), VMF(3), VMF(4), VMF(5), VMF(6), VMF(7), VMF(8), args[9] );
+		} else {
+			re.AddLightToScene( VMA(1), VMF(3), VMF(5), VMF(6), VMF(7), VMF(8), args[9] );
+		}
+		return 0;
 	case CG_R_ADDSKELETONTOSCENE:
 		return re.AddSkeletonToScene ? re.AddSkeletonToScene( VMA(1), args[2] ) : 0;
 	case CG_R_LERPTAG:

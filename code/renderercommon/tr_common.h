@@ -109,6 +109,7 @@ extern qboolean  haveClampToEdge;
 #define REF_VERTEX_DLIGHT	0x10 // ET style spherical dlight using vertex light rendering
 #define REF_FORCE_DLIGHT	0x20 // force this dlight under all conditions
 #define REF_FLARE_DLIGHT	0x40 // allow displaying a flare at dlight origin
+#define REF_SPOT_DLIGHT		0x80 // a spot light: only in a cone around its direction (AddSpotLightToScene)
 
 // surfaceParm flags (these are only used internally, not to be confused with surfaceFlags values in BSPs)
 #define	SURF_SKY				0x01	// lighting from environment map

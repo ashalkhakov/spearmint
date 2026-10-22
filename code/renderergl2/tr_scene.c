@@ -600,6 +600,26 @@ void RE_AddJuniorLightToScene( const vec3_t org, float radius, float intensity, 
 
 /*
 =====================
+RE_AddSpotLightToScene
+
+a light lighting only within cone degrees of dir
+=====================
+*/
+void RE_AddSpotLightToScene( const vec3_t org, const vec3_t dir, float radius, float cone, float intensity, float r, float g, float b, qhandle_t hShader ) {
+	int			before = r_numdlights;
+	dlight_t	*dl;
+
+	RE_AddDynamicLightToScene( org, radius, intensity, r, g, b, REF_GRID_DLIGHT | REF_SURFACE_DLIGHT | REF_SPOT_DLIGHT, hShader );
+	if ( r_numdlights == before ) {
+		return;
+	}
+	dl = &backEndData->dlights[r_numdlights - 1];
+	VectorNormalize2( dir, dl->dir );
+	dl->spotCos = cos( DEG2RAD( Com_Clamp( 1.0f, 89.0f, cone ) ) );
+}
+
+/*
+=====================
 RE_AddDirectedLightToScene
 
 =====================

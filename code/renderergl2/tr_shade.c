@@ -459,6 +459,21 @@ static void ProjectDlightTexture( void ) {
 
 		GLSL_SetUniformFloat(sp, UNIFORM_INTENSITY, intensity);
 
+		// a spot light's direction, in the surface's space as its origin is
+		if ( dl->flags & REF_SPOT_DLIGHT ) {
+			if ( backEnd.currentEntity && backEnd.currentEntity != &tr.worldEntity ) {
+				vector[0] = DotProduct( dl->dir, backEnd.or.axis[0] );
+				vector[1] = DotProduct( dl->dir, backEnd.or.axis[1] );
+				vector[2] = DotProduct( dl->dir, backEnd.or.axis[2] );
+			} else {
+				VectorCopy( dl->dir, vector );
+			}
+			vector[3] = dl->spotCos;
+		} else {
+			VectorSet4( vector, 0, 0, 1, -2 );
+		}
+		GLSL_SetUniformVec4(sp, UNIFORM_SPOTINFO, vector);
+
 		if ( dl->dlshader ) {
 			shader_t *dls = dl->dlshader;
 			int i;
@@ -1037,6 +1052,14 @@ static void ForwardDlight( void ) {
 		GLSL_SetUniformVec4(sp, UNIFORM_LIGHTORIGIN, vector);
 
 		GLSL_SetUniformFloat(sp, UNIFORM_LIGHTRADIUS, radius);
+
+		if ( dl->flags & REF_SPOT_DLIGHT ) {
+			VectorCopy( dl->dir, vector );
+			vector[3] = dl->spotCos;
+		} else {
+			VectorSet4( vector, 0, 0, 1, -2 );
+		}
+		GLSL_SetUniformVec4(sp, UNIFORM_SPOTINFO, vector);
 
 		GLSL_SetUniformVec4(sp, UNIFORM_NORMALSCALE, pStage->normalScale);
 		GLSL_SetUniformVec4(sp, UNIFORM_SPECULARSCALE, pStage->specularScale);
