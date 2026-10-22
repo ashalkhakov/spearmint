@@ -138,6 +138,7 @@ cvar_t  *r_forceAutoExposureMax;
 cvar_t  *r_depthPrepass;
 cvar_t  *r_fogLights;
 cvar_t  *r_fogLightDensity;
+cvar_t  *r_fogLightScatter;
 cvar_t  *r_portalVis;
 cvar_t  *r_dlightShadows;
 cvar_t  *r_dlightShadowAtlasSize;
@@ -1329,6 +1330,7 @@ void R_Register( void )
 	r_depthPrepass = ri.Cvar_Get( "r_depthPrepass", "1", CVAR_ARCHIVE );
 	r_fogLights = ri.Cvar_Get( "r_fogLights", "1", CVAR_ARCHIVE );
 	r_fogLightDensity = ri.Cvar_Get( "r_fogLightDensity", "8", CVAR_ARCHIVE );
+	r_fogLightScatter = ri.Cvar_Get( "r_fogLightScatter", "1", CVAR_ARCHIVE );
 	r_portalVis = ri.Cvar_Get( "r_portalVis", "1", CVAR_ARCHIVE );
 	r_dlightShadows = ri.Cvar_Get( "r_dlightShadows", "4", CVAR_ARCHIVE );
 	r_dlightShadowAtlasSize = ri.Cvar_Get( "r_dlightShadowAtlasSize", "2048", CVAR_ARCHIVE | CVAR_LATCH );

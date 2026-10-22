@@ -15,6 +15,12 @@ uniform int    u_FogNumPlanes;
 uniform vec4   u_FogVolumeInfo;		// lowest z, highest z, distance to opaque
 uniform vec4   u_Color;
 
+// the dynamic lights reaching it: scattered toward the eye, they brighten it
+uniform vec4   u_FogLights[MAX_FOG_DLIGHTS];		// origin, radius
+uniform vec4   u_FogLightColors[MAX_FOG_DLIGHTS];	// colour times intensity and scattering
+uniform vec4   u_FogLightDirs[MAX_FOG_DLIGHTS];	// a spot's direction and cone cosine, w -2 a point
+uniform int    u_FogNumLights;
+
 varying vec3   var_Position;
 
 // depth is GL_DEPTH_COMPONENT24
@@ -59,5 +65,33 @@ void main()
 	float z2 = u_ViewOrigin.z + dir.z * tEnd;
 	float density = (u_FogVolumeInfo.y - 0.75 * min(z1, z2) - 0.25 * max(z1, z2)) / max(u_FogVolumeInfo.y - u_FogVolumeInfo.x, 1.0);
 
-	gl_FragColor = vec4(u_Color.rgb, clamp(len * max(density, 0.0) / u_FogVolumeInfo.z, 0.0, 1.0));
+	// the lights' light along the run, in the fog's own hue
+	vec3 fogColor = u_Color.rgb;
+	if (u_FogNumLights > 0)
+	{
+		vec3 lit = vec3(0.0);
+
+		for (int k = 0; k < 8; k++)
+		{
+			vec3 p = u_ViewOrigin + dir * mix(tEnter, tEnd, (float(k) + 0.5) / 8.0);
+
+			for (int l = 0; l < MAX_FOG_DLIGHTS; l++)
+			{
+				if (l >= u_FogNumLights)
+					break;
+
+				vec3 toLight = u_FogLights[l].xyz - p;
+				float dist = length(toLight);
+				float a = clamp(1.0 - dist / u_FogLights[l].w, 0.0, 1.0);
+
+				a *= a;
+				if (u_FogLightDirs[l].w > -1.5)
+					a *= smoothstep(u_FogLightDirs[l].w, mix(u_FogLightDirs[l].w, 1.0, 0.3), dot(-toLight / max(dist, 0.001), u_FogLightDirs[l].xyz));
+				lit += u_FogLightColors[l].rgb * a;
+			}
+		}
+		fogColor += u_Color.rgb / max(max(u_Color.r, u_Color.g), max(u_Color.b, 0.001)) * lit * 0.125;
+	}
+
+	gl_FragColor = vec4(fogColor, clamp(len * max(density, 0.0) / u_FogVolumeInfo.z, 0.0, 1.0));
 }

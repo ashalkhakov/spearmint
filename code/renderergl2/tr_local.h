@@ -810,6 +810,11 @@ typedef enum
 	UNIFORM_DLIGHTSHADOWTILES,	// their places in it
 	UNIFORM_DLIGHTSHADOWINFO,	// faces (0 none), softness in texels, 1 / atlas size, depth bias
 
+	UNIFORM_FOGLIGHTS,			// lights in a fog volume (fogvolume_fp.glsl): origin, radius
+	UNIFORM_FOGLIGHTCOLORS,		// their colour times intensity, scattering
+	UNIFORM_FOGLIGHTDIRS,		// a spot's direction and cone cosine, w -2 a point
+	UNIFORM_FOGNUMLIGHTS,
+
 	UNIFORM_COUNT
 } uniform_t;
 
@@ -964,6 +969,7 @@ typedef struct {
 } fog_t;
 
 #define MAX_FOGLIGHT_PLANES	32		// u_FogPlanes in fogvolume_fp.glsl
+#define MAX_FOG_DLIGHTS		8		// dynamic lights a fog volume scatters (u_FogLights)
 
 typedef enum {
 	VPF_NONE            = 0x00,
@@ -2076,7 +2082,8 @@ extern  cvar_t  *r_dlightShadows;		// dynamic lights with shadow maps at most (t
 extern  cvar_t  *r_dlightShadowAtlasSize;
 extern  cvar_t  *r_dlightShadowSoftness;
 extern  cvar_t  *r_portalVis;			// portal flow for visibility (tr_portals.c)
-extern  cvar_t  *r_fogLightDensity;	// fog lights' density times this
+extern  cvar_t  *r_fogLightDensity;
+extern  cvar_t  *r_fogLightScatter;		// how much dynamic lights brighten fog volumes	// fog lights' density times this
 extern  cvar_t  *r_fogLights;		// fog volumes with "fogLight" shaders drawn per pixel (tr_fogvolume.c)
 extern  cvar_t  *r_ssao;
 

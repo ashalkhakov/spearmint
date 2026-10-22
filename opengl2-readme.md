@@ -318,6 +318,10 @@ Cvars that you probably don't care about or shouldn't mess with:
 *  `r_dlightShadowSoftness`         - How far the shadows' edges are softened,
                                    in texels (1.5 by default).
 
+*  `r_fogLightScatter`              - How much the dynamic lights reaching a fog
+                                   light brighten it, scattered toward the
+                                   eye along each ray (0 none, 1 default).
+
 *  `r_portalVis`                    - Doom 3 style portal visibility: the map's
                                    BSP is cut into portals between its leafs
                                    when it loads, and each view flows from
@@ -535,6 +539,8 @@ It is then drawn as Doom 3 draws fog lights, not as a Quake 3 fog volume:
   volume fog); fogParms' depth is how far through it is opaque;
 - the surfaces in it and its brush's faces aren't fogged or drawn the Quake 3
   way.
+- dynamic lights reaching it brighten it in its own hue, by their light
+  along each ray through it (up to 8 lights; their shadows aren't in it yet).
 
 Daikatana's fog volumes are converted to these.
 

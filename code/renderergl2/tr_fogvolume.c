@@ -232,6 +232,47 @@ void RB_DrawFogVolumes( void ) {
 			GLSL_SetUniformMat4( sp, UNIFORM_MODELVIEWPROJECTIONMATRIX, glState.modelviewProjection );
 		}
 
+		// the dynamic lights reaching it, which light it (scattered toward
+		// the eye along each ray, fogvolume_fp.glsl)
+		{
+			vec4_t	lights[MAX_FOG_DLIGHTS], colors[MAX_FOG_DLIGHTS], dirs[MAX_FOG_DLIGHTS];
+			int		l, numLights = 0;
+
+			for ( l = 0; l < backEnd.refdef.num_dlights && numLights < MAX_FOG_DLIGHTS && r_fogLightScatter->value > 0; l++ ) {
+				dlight_t	*dl = &backEnd.refdef.dlights[l];
+				int			k;
+
+				if ( ( dl->flags & ( REF_DIRECTED_DLIGHT | REF_VERTEX_DLIGHT ) ) || !( dl->flags & REF_SURFACE_DLIGHT ) ) {
+					continue;
+				}
+				for ( k = 0; k < 3; k++ ) {
+					if ( dl->origin[k] + dl->radius < fog->bounds[0][k] || dl->origin[k] - dl->radius > fog->bounds[1][k] ) {
+						break;
+					}
+				}
+				if ( k < 3 ) {
+					continue;
+				}
+				VectorCopy( dl->origin, lights[numLights] );
+				lights[numLights][3] = dl->radius;
+				VectorScale( dl->color, Com_Clamp( 0.0f, 1.0f, dl->intensity ) * r_fogLightScatter->value, colors[numLights] );
+				colors[numLights][3] = 0;
+				if ( dl->flags & REF_SPOT_DLIGHT ) {
+					VectorCopy( dl->dir, dirs[numLights] );
+					dirs[numLights][3] = dl->spotCos;
+				} else {
+					VectorSet4( dirs[numLights], 0, 0, 1, -2 );
+				}
+				numLights++;
+			}
+			GLSL_SetUniformInt( sp, UNIFORM_FOGNUMLIGHTS, numLights );
+			if ( numLights ) {
+				GLSL_SetUniformVec4Array( sp, UNIFORM_FOGLIGHTS, (const vec4_t *)lights, numLights );
+				GLSL_SetUniformVec4Array( sp, UNIFORM_FOGLIGHTCOLORS, (const vec4_t *)colors, numLights );
+				GLSL_SetUniformVec4Array( sp, UNIFORM_FOGLIGHTDIRS, (const vec4_t *)dirs, numLights );
+			}
+		}
+
 		GLSL_SetUniformVec4Array( sp, UNIFORM_FOGPLANES, (const vec4_t *)fog->planes, fog->numPlanes );
 		GLSL_SetUniformInt( sp, UNIFORM_FOGNUMPLANES, fog->numPlanes );
 		{

@@ -190,6 +190,11 @@ static uniformInfo_t uniformsInfo[] =
 	{ "u_DlightShadowMvps",  GLSL_VEC4_ARRAY },
 	{ "u_DlightShadowTiles", GLSL_VEC4_ARRAY },
 	{ "u_DlightShadowInfo",  GLSL_VEC4 },
+
+	{ "u_FogLights",       GLSL_VEC4_ARRAY },
+	{ "u_FogLightColors",  GLSL_VEC4_ARRAY },
+	{ "u_FogLightDirs",    GLSL_VEC4_ARRAY },
+	{ "u_FogNumLights",    GLSL_INT },
 };
 
 typedef enum
@@ -1503,6 +1508,7 @@ void GLSL_InitGPUShaders(void)
 	extradefines[0] = '\0';
 
 	Q_strcat(extradefines, 1024, va("#define MAX_FOGLIGHT_PLANES %d\n", MAX_FOGLIGHT_PLANES));
+	Q_strcat(extradefines, 1024, va("#define MAX_FOG_DLIGHTS %d\n", MAX_FOG_DLIGHTS));
 
 	if (!GLSL_InitGPUShader(&tr.fogVolumeShader, "fogvolume", attribs, qtrue, extradefines, qtrue, fallbackShader_fogvolume_vp, fallbackShader_fogvolume_fp))
 	{
