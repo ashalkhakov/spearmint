@@ -632,6 +632,7 @@ qboolean R_FlowView( mnode_t *eyeLeaf, const byte *pvs ) {
 	int			i;
 
 	if ( !r_portalVis->integer || !tr.world->numPortals || !eyeLeaf || eyeLeaf->cluster < 0
+		|| ( tr.viewParms.flags & VPF_ORTHOGRAPHIC )
 		|| eyeLeaf->cluster >= tr.world->numClusters ) {
 		return qfalse;
 	}

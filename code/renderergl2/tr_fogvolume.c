@@ -232,7 +232,7 @@ void RB_DrawFogVolumes( void ) {
 			GLSL_SetUniformMat4( sp, UNIFORM_MODELVIEWPROJECTIONMATRIX, glState.modelviewProjection );
 		}
 
-		GLSL_SetUniformVec4FogPlanes( sp, UNIFORM_FOGPLANES, (const vec4_t *)fog->planes, fog->numPlanes );
+		GLSL_SetUniformVec4Array( sp, UNIFORM_FOGPLANES, (const vec4_t *)fog->planes, fog->numPlanes );
 		GLSL_SetUniformInt( sp, UNIFORM_FOGNUMPLANES, fog->numPlanes );
 		{
 			vec4_t info, color;

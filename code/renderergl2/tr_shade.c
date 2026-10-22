@@ -1061,6 +1061,26 @@ static void ForwardDlight( void ) {
 		}
 		GLSL_SetUniformVec4(sp, UNIFORM_SPOTINFO, vector);
 
+		// its shadow map in the atlas (tr_dlightshadow.c)
+		if ( dl->shadow >= 0 && dl->shadow < backEnd.refdef.numDlightShadows ) {
+			vec4_t	columns[24];
+			int		face, numFaces = backEnd.refdef.dlightShadows[dl->shadow].numFaces;
+
+			for ( face = 0; face < numFaces; face++ ) {
+				Com_Memcpy( columns[face * 4], backEnd.refdef.dlightShadows[dl->shadow].mvp[face], sizeof( mat4_t ) );
+			}
+			GLSL_SetUniformVec4Array( sp, UNIFORM_DLIGHTSHADOWMVPS, (const vec4_t *)columns, numFaces * 4 );
+			GLSL_SetUniformVec4Array( sp, UNIFORM_DLIGHTSHADOWTILES, (const vec4_t *)backEnd.refdef.dlightShadows[dl->shadow].tiles, numFaces );
+			VectorSet4( vector, numFaces, r_dlightShadowSoftness->value, 1.0f / tr.dlightShadowAtlasImage->width, 0.0005f );
+		} else {
+			VectorSet4( vector, 0, 0, 0, 0 );
+		}
+		// (always bound: the shadow sampler needs a depth texture)
+		if ( tr.dlightShadowAtlasImage ) {
+			GL_BindToTMU( tr.dlightShadowAtlasImage, TB_DLIGHTSHADOW );
+		}
+		GLSL_SetUniformVec4(sp, UNIFORM_DLIGHTSHADOWINFO, vector);
+
 		GLSL_SetUniformVec4(sp, UNIFORM_NORMALSCALE, pStage->normalScale);
 		GLSL_SetUniformVec4(sp, UNIFORM_SPECULARSCALE, pStage->specularScale);
 		

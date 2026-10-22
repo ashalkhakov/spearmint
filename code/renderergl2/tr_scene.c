@@ -551,6 +551,7 @@ void RE_AddDynamicLightToScene( const vec3_t org, float radius, float intensity,
 	dl->color[ 1 ] = g;
 	dl->color[ 2 ] = b;
 	dl->flags = flags;
+	dl->shadow = -1;
 	if ( hShader ) {
 		dl->dlshader = R_GetShaderByHandle( hShader );
 	} else {
@@ -887,6 +888,16 @@ void RE_RenderScene( const refdef_t *vmRefDef, int vmRefDefSize ) {
 	if (!( fd.rdflags & RDF_NOWORLDMODEL ) && tr.refdef.num_dlights && r_dlightMode->integer >= 2)
 	{
 		R_RenderDlightCubemaps(&fd);
+	}
+
+	// dynamic lights' shadow maps (tr_dlightshadow.c)
+	if (glRefConfig.framebufferObject && r_dlightMode->integer == 1)
+	{
+		R_RenderDlightShadows(&fd);
+	}
+	else
+	{
+		tr.refdef.numDlightShadows = 0;
 	}
 
 	/* playing with more shadows */

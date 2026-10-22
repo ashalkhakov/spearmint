@@ -302,6 +302,22 @@ Cvars that you probably don't care about or shouldn't mess with:
                                      0 - No, they aren't drawn.
                                      1 - Yes. (default)
 
+*  `r_dlightShadows`                - Dynamic lights with shadow maps at most
+                                   (r_dlightMode 1): the ones that matter
+                                   most to the view (bright, big, near) get
+                                   places in one depth texture, six faces a
+                                   point light and one a spot light, softened
+                                   with eight taps.
+                                     0 - None.
+                                     4 - (default) At most 8.
+
+*  `r_dlightShadowAtlasSize`        - The shadow atlas's size in texels, 2048
+                                   by default; the first light's faces are a
+                                   quarter of it each, the next smaller.
+
+*  `r_dlightShadowSoftness`         - How far the shadows' edges are softened,
+                                   in texels (1.5 by default).
+
 *  `r_portalVis`                    - Doom 3 style portal visibility: the map's
                                    BSP is cut into portals between its leafs
                                    when it loads, and each view flows from

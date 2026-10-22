@@ -346,6 +346,15 @@ void FBO_Init(void)
 		}
 	}
 
+	if (tr.dlightShadowAtlasImage)
+	{
+		tr.dlightShadowAtlasFbo = FBO_Create("_dlightshadowatlas", tr.dlightShadowAtlasImage->width, tr.dlightShadowAtlasImage->height);
+		FBO_Bind(tr.dlightShadowAtlasFbo);
+		FBO_CreateBuffer(tr.dlightShadowAtlasFbo, GL_RGBA8, 0, 0);
+		FBO_AttachImage(tr.dlightShadowAtlasFbo, tr.dlightShadowAtlasImage, GL_DEPTH_ATTACHMENT, 0);
+		R_CheckFBO(tr.dlightShadowAtlasFbo);
+	}
+
 	if (tr.sunShadowDepthImage[0])
 	{
 		for (i = 0; i < 4; i++)

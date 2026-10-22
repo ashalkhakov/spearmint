@@ -2058,7 +2058,7 @@ void R_GenerateDrawSurfs( void ) {
 	// matrix for lod calculation
 
 	// dynamically compute far clip plane distance
-	if (!(tr.viewParms.flags & VPF_SHADOWMAP))
+	if (!(tr.viewParms.flags & (VPF_SHADOWMAP | VPF_FIXEDFAR)))
 	{
 		R_SetFarClip();
 	}

@@ -180,11 +180,16 @@ static uniformInfo_t uniformsInfo[] =
 	{ "u_ZFadeLowest", GLSL_FLOAT },
 	{ "u_ZFadeHighest", GLSL_FLOAT },
 
-	{ "u_FogPlanes",      GLSL_VEC4_FOGPLANES },
+	{ "u_FogPlanes",      GLSL_VEC4_ARRAY },
 	{ "u_FogNumPlanes",   GLSL_INT },
 	{ "u_FogVolumeInfo",  GLSL_VEC4 },
 
 	{ "u_SpotInfo",       GLSL_VEC4 },
+
+	{ "u_DlightShadowMap",   GLSL_INT },
+	{ "u_DlightShadowMvps",  GLSL_VEC4_ARRAY },
+	{ "u_DlightShadowTiles", GLSL_VEC4_ARRAY },
+	{ "u_DlightShadowInfo",  GLSL_VEC4 },
 };
 
 typedef enum
@@ -753,7 +758,7 @@ void GLSL_InitUniforms(shaderProgram_t *program)
 			case GLSL_MAT16_BONEMATRIX:
 				size += sizeof(vec_t) * 16 * glRefConfig.glslMaxAnimatedBones;
 				break;
-			case GLSL_VEC4_FOGPLANES:
+			case GLSL_VEC4_ARRAY:
 				size += sizeof(vec4_t) * MAX_FOGLIGHT_PLANES;
 				break;
 			default:
@@ -971,7 +976,7 @@ void GLSL_SetUniformMat4BoneMatrix(shaderProgram_t *program, int uniformNum, /*c
 	qglProgramUniformMatrix4fvEXT(program->program, uniforms[uniformNum], numMatricies, GL_FALSE, &matrix[0][0]);
 }
 
-void GLSL_SetUniformVec4FogPlanes(shaderProgram_t *program, int uniformNum, const vec4_t *v, int count)
+void GLSL_SetUniformVec4Array(shaderProgram_t *program, int uniformNum, const vec4_t *v, int count)
 {
 	GLint *uniforms = program->uniforms;
 	vec_t *compare = (float *)(program->uniformBuffer + program->uniformBufferOffsets[uniformNum]);
@@ -980,9 +985,9 @@ void GLSL_SetUniformVec4FogPlanes(shaderProgram_t *program, int uniformNum, cons
 		return;
 	}
 
-	if (uniformsInfo[uniformNum].type != GLSL_VEC4_FOGPLANES)
+	if (uniformsInfo[uniformNum].type != GLSL_VEC4_ARRAY)
 	{
-		ri.Printf( PRINT_WARNING, "GLSL_SetUniformVec4FogPlanes: wrong type for uniform %i in program %s\n", uniformNum, program->name);
+		ri.Printf( PRINT_WARNING, "GLSL_SetUniformVec4Array: wrong type for uniform %i in program %s\n", uniformNum, program->name);
 		return;
 	}
 
@@ -1323,6 +1328,7 @@ void GLSL_InitGPUShaders(void)
 		GLSL_SetUniformInt(&tr.lightallShader[i], UNIFORM_DELUXEMAP,   TB_DELUXEMAP);
 		GLSL_SetUniformInt(&tr.lightallShader[i], UNIFORM_SPECULARMAP, TB_SPECULARMAP);
 		GLSL_SetUniformInt(&tr.lightallShader[i], UNIFORM_SHADOWMAP,   TB_SHADOWMAP);
+		GLSL_SetUniformInt(&tr.lightallShader[i], UNIFORM_DLIGHTSHADOWMAP, TB_DLIGHTSHADOW);
 		GLSL_SetUniformInt(&tr.lightallShader[i], UNIFORM_CUBEMAP,     TB_CUBEMAP);
 
 		GLSL_FinishGPUShader(&tr.lightallShader[i]);

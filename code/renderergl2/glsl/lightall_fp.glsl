@@ -50,6 +50,61 @@ uniform float     u_AlphaTestRef;
 
 #if defined(USE_LIGHT_VECTOR)
 uniform vec4      u_SpotInfo;		// a spot light's direction and cone cosine; w -2 for a point light
+
+// its shadow map in the atlas (tr_dlightshadow.c)
+uniform vec4      u_LightOrigin;
+uniform sampler2DShadow u_DlightShadowMap;
+uniform vec4      u_DlightShadowMvps[24];	// a face's world to clip matrix, 4 columns each
+uniform vec4      u_DlightShadowTiles[6];	// a face's place in the atlas
+uniform vec4      u_DlightShadowInfo;		// faces (0 none), softness in texels, 1 / atlas size, depth bias
+
+// how lit a point is by the light, 0 to 1: the face it's in (the major axis
+// from the light, -X +X -Y +Y -Z +Z, or a spot light's one), a little out
+// along the surface against acne, eight taps softening the edge
+float DlightShadow(vec3 worldPos, vec3 surfNormal)
+{
+	vec3 v = worldPos - u_LightOrigin.xyz;
+	int face = 0;
+
+	if (u_DlightShadowInfo.x > 1.5)
+	{
+		vec3 a = abs(v);
+
+		if (a.x >= a.y && a.x >= a.z)
+			face = v.x > 0.0 ? 1 : 0;
+		else if (a.y >= a.z)
+			face = v.y > 0.0 ? 3 : 2;
+		else
+			face = v.z > 0.0 ? 5 : 4;
+	}
+
+	vec4 tile = u_DlightShadowTiles[face];
+	float texel = u_DlightShadowInfo.z;
+	float tileTexels = tile.z / texel;
+	vec3 p = worldPos + surfNormal * (3.0 * length(v) / tileTexels);
+
+	mat4 m = mat4(u_DlightShadowMvps[face * 4], u_DlightShadowMvps[face * 4 + 1],
+	              u_DlightShadowMvps[face * 4 + 2], u_DlightShadowMvps[face * 4 + 3]);
+	vec4 clip = m * vec4(p, 1.0);
+	vec3 ndc = clip.xyz / clip.w;
+	vec2 uv = tile.xy + (ndc.xy * 0.5 + 0.5) * tile.zw;
+	float depth = ndc.z * 0.5 + 0.5 - u_DlightShadowInfo.w;
+
+	vec2 lo = tile.xy + vec2(texel);
+	vec2 hi = tile.xy + tile.zw - vec2(texel);
+	float soft = u_DlightShadowInfo.y * texel;
+
+	float lit = 0.0;
+	lit += shadow2D(u_DlightShadowMap, vec3(clamp(uv + vec2(-0.613,  0.617) * soft, lo, hi), depth));
+	lit += shadow2D(u_DlightShadowMap, vec3(clamp(uv + vec2( 0.170, -0.040) * soft, lo, hi), depth));
+	lit += shadow2D(u_DlightShadowMap, vec3(clamp(uv + vec2(-0.299, -0.792) * soft, lo, hi), depth));
+	lit += shadow2D(u_DlightShadowMap, vec3(clamp(uv + vec2( 0.645,  0.493) * soft, lo, hi), depth));
+	lit += shadow2D(u_DlightShadowMap, vec3(clamp(uv + vec2(-0.651,  0.718) * soft, lo, hi), depth));
+	lit += shadow2D(u_DlightShadowMap, vec3(clamp(uv + vec2( 0.421,  0.027) * soft, lo, hi), depth));
+	lit += shadow2D(u_DlightShadowMap, vec3(clamp(uv + vec2(-0.817, -0.271) * soft, lo, hi), depth));
+	lit += shadow2D(u_DlightShadowMap, vec3(clamp(uv + vec2( 0.977, -0.108) * soft, lo, hi), depth));
+	return lit * 0.125;
+}
 #endif
 
 varying vec4      var_TexCoords;
@@ -345,6 +400,14 @@ void main()
 	// a spot light: only within its cone, softly at the edge
 	if (u_SpotInfo.w > -1.5)
 		attenuation *= smoothstep(u_SpotInfo.w, mix(u_SpotInfo.w, 1.0, 0.3), dot(-L, u_SpotInfo.xyz));
+	// and shadowed
+	if (u_DlightShadowInfo.x > 0.5 && attenuation > 0.0)
+	{
+		vec3 towardLight = normalize(surfNormal);
+		if (dot(towardLight, L) < 0.0)
+			towardLight = -towardLight;
+		attenuation *= DlightShadow(u_LightOrigin.xyz - var_LightDir.xyz, towardLight);
+	}
   #else
 	attenuation  = 1.0;
   #endif

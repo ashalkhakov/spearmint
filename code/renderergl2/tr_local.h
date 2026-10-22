@@ -101,6 +101,7 @@ typedef struct corona_s {
 #undef MAX_DLIGHTS
 #define MAX_DLIGHTS			64
 #define MAX_SCENE_DLIGHTS	256
+#define MAX_DLIGHT_SHADOWS	8		// lights with shadow maps in a view at most
 typedef uint64_t dlightBits_t;
 #define DLIGHT_BIT(i)		( (dlightBits_t)1 << (i) )
 #define DLIGHT_MASK(n)		( (n) >= 64 ? ~(dlightBits_t)0 : DLIGHT_BIT( n ) - 1 )
@@ -115,6 +116,7 @@ typedef struct dlight_s {
 	struct shader_s	*dlshader;
 	vec3_t		dir;				// a spot light's (REF_SPOT_DLIGHT), unit
 	float		spotCos;			// cosine of its cone's half angle
+	int			shadow;				// in trRefdef_t dlightShadows, -1 for none
 
 	vec3_t		transformed;		// origin in local coordinate system
 } dlight_t;
@@ -423,6 +425,7 @@ enum
 	TB_SHADOWMAP   = 5,
 	TB_CUBEMAP     = 6,
 	TB_SHADOWMAP4  = 6,
+	TB_DLIGHTSHADOW = 7,		// the dynamic lights' shadow atlas (tr_dlightshadow.c)
 	NUM_TEXTURE_BUNDLES = 7
 };
 
@@ -684,7 +687,7 @@ enum
 	GLSL_VEC4,
 	GLSL_MAT16,
 	GLSL_MAT16_BONEMATRIX,
-	GLSL_VEC4_FOGPLANES
+	GLSL_VEC4_ARRAY
 };
 
 typedef enum
@@ -802,6 +805,11 @@ typedef enum
 
 	UNIFORM_SPOTINFO,		// a spot light's direction and cone cosine, w -2 for a point light
 
+	UNIFORM_DLIGHTSHADOWMAP,	// the shadow atlas (tr_dlightshadow.c)
+	UNIFORM_DLIGHTSHADOWMVPS,	// its faces' matrices, 4 columns each
+	UNIFORM_DLIGHTSHADOWTILES,	// their places in it
+	UNIFORM_DLIGHTSHADOWINFO,	// faces (0 none), softness in texels, 1 / atlas size, depth bias
+
 	UNIFORM_COUNT
 } uniform_t;
 
@@ -901,6 +909,14 @@ typedef struct {
 	struct pshadow_s *pshadows;
 
 	float       sunShadowMvp[4][16];
+
+	// dynamic lights' shadow maps in the atlas (tr_dlightshadow.c)
+	int			numDlightShadows;
+	struct {
+		int		numFaces;			// 6 a point light, 1 a spot light
+		mat4_t	mvp[6];				// world to each face's clip space
+		vec4_t	tiles[6];			// each face's place in the atlas, 0 to 1
+	} dlightShadows[MAX_DLIGHT_SHADOWS];
 	float       sunDir[4];
 	float       sunCol[4];
 	float       sunAmbCol[4];
@@ -958,7 +974,8 @@ typedef enum {
 	VPF_ORTHOGRAPHIC    = 0x10,
 	VPF_USESUNLIGHT     = 0x20,
 	VPF_FARPLANEFRUSTUM = 0x40,
-	VPF_NOCUBEMAPS      = 0x80
+	VPF_NOCUBEMAPS      = 0x80,
+	VPF_FIXEDFAR        = 0x100		// keep the zFar given (a light's radius), not from the world
 } viewParmFlags_t;
 
 typedef struct {
@@ -1774,6 +1791,7 @@ typedef struct {
 	image_t					*targetLevelsImage;
 	image_t					*fixedLevelsImage;
 	image_t					*sunShadowDepthImage[4];
+	image_t					*dlightShadowAtlasImage;	// tr_dlightshadow.c
 	image_t                 *screenShadowImage;
 	image_t                 *screenSsaoImage;
 	image_t					*hdrDepthImage;
@@ -1792,6 +1810,7 @@ typedef struct {
 	FBO_t					*calcLevelsFbo;
 	FBO_t					*targetLevelsFbo;
 	FBO_t					*sunShadowFbo[4];
+	FBO_t					*dlightShadowAtlasFbo;
 	FBO_t					*screenShadowFbo;
 	FBO_t					*screenSsaoFbo;
 	FBO_t					*hdrDepthFbo;
@@ -2053,6 +2072,9 @@ extern  cvar_t  *r_forceAutoExposureMax;
 extern  cvar_t  *r_cameraExposure;
 
 extern  cvar_t  *r_depthPrepass;
+extern  cvar_t  *r_dlightShadows;		// dynamic lights with shadow maps at most (tr_dlightshadow.c)
+extern  cvar_t  *r_dlightShadowAtlasSize;
+extern  cvar_t  *r_dlightShadowSoftness;
 extern  cvar_t  *r_portalVis;			// portal flow for visibility (tr_portals.c)
 extern  cvar_t  *r_fogLightDensity;	// fog lights' density times this
 extern  cvar_t  *r_fogLights;		// fog volumes with "fogLight" shaders drawn per pixel (tr_fogvolume.c)
@@ -2522,6 +2544,8 @@ FOG VOLUMES, tr_fogvolume.c
 
 void R_FogLightHull( fog_t *fog, const vec4_t *planes, int numPlanes );
 
+void R_RenderDlightShadows( const refdef_t *fd );
+
 void R_PortalizeWorld( world_t *world );
 qboolean R_FlowView( mnode_t *eyeLeaf, const byte *pvs );
 void RB_DrawFogVolumes( void );
@@ -2612,7 +2636,7 @@ void GLSL_SetUniformVec3(shaderProgram_t *program, int uniformNum, const vec3_t 
 void GLSL_SetUniformVec4(shaderProgram_t *program, int uniformNum, const vec4_t v);
 void GLSL_SetUniformMat4(shaderProgram_t *program, int uniformNum, const mat4_t matrix);
 void GLSL_SetUniformMat4BoneMatrix(shaderProgram_t *program, int uniformNum, /*const*/ mat4_t *matrix, int numMatricies);
-void GLSL_SetUniformVec4FogPlanes(shaderProgram_t *program, int uniformNum, const vec4_t *v, int count);
+void GLSL_SetUniformVec4Array(shaderProgram_t *program, int uniformNum, const vec4_t *v, int count);
 
 shaderProgram_t *GLSL_GetGenericShaderProgram(int stage, fogType_t fogType);
 

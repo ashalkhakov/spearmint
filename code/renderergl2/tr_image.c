@@ -2936,6 +2936,17 @@ void R_CreateBuiltinImages( void ) {
 		if (r_drawSunRays->integer)
 			tr.sunRaysImage = R_CreateImage("*sunRays", NULL, width, height, IMGTYPE_COLORALPHA, IMGFLAG_NO_COMPRESSION | IMGFLAG_CLAMPTOEDGE, rgbFormat);
 
+		// the dynamic lights' shadow atlas: depth, compared (tr_dlightshadow.c);
+		// a tiny one without shadows, as the light passes' shadow sampler
+		// needs a depth texture bound even when unused
+		{
+			int size = r_dlightShadows->integer > 0 ? Com_Clamp(512, 8192, r_dlightShadowAtlasSize->integer) : 16;
+
+			tr.dlightShadowAtlasImage = R_CreateImage("*dlightshadowatlas", NULL, size, size, IMGTYPE_COLORALPHA, IMGFLAG_NO_COMPRESSION | IMGFLAG_CLAMPTOEDGE, GL_DEPTH_COMPONENT24);
+			qglTextureParameterfEXT(tr.dlightShadowAtlasImage->texnum, GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
+			qglTextureParameterfEXT(tr.dlightShadowAtlasImage->texnum, GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+		}
+
 		tr.renderDepthImage  = R_CreateImage("*renderdepth",  NULL, width, height, IMGTYPE_COLORALPHA, IMGFLAG_NO_COMPRESSION | IMGFLAG_CLAMPTOEDGE, GL_DEPTH_COMPONENT24);
 		tr.textureDepthImage = R_CreateImage("*texturedepth", NULL, PSHADOW_MAP_SIZE, PSHADOW_MAP_SIZE, IMGTYPE_COLORALPHA, IMGFLAG_NO_COMPRESSION | IMGFLAG_CLAMPTOEDGE, GL_DEPTH_COMPONENT24);
 
