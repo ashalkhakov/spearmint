@@ -1770,8 +1770,10 @@ void R_AddEntDrawSurf( trRefEntity_t *ent, surfaceType_t *surface, shader_t *sha
 	if ( shader->fogParms.fogLight ) {
 		return;
 	}
-	if ( fogIndex > 0 && tr.world && fogIndex < tr.world->numfogs && tr.world->fogs[fogIndex].fogLight ) {
-		fogIndex = 0;
+	// (they keep the map's global fog, slot 1, as surfaces in no fog volume
+	// do: ConvertBSPFogNum)
+	if ( fogIndex > 1 && tr.world && fogIndex < tr.world->numfogs && tr.world->fogs[fogIndex].fogLight ) {
+		fogIndex = 1;
 	}
 
 	if ( ent && ( ent->e.renderfx & RF_FORCE_ENT_ALPHA ) ) {
