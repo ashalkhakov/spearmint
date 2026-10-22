@@ -1945,11 +1945,6 @@ static void R_AddEntitySurface (int entityNum)
 		// ZTM: NOTE: The OpenGL2 renderer's sunshadows/shadowmaps draw the whole model.
 		if (tr.viewParms.flags & (VPF_SHADOWMAP | VPF_DEPTHSHADOW)) {
 			onlyRenderShadows = qfalse;
-		}
-		// ZTM: NOTE: cg_shadows 2 (stencil) doesn't work for first person models
-		//            so this only needs to handle cg_shadows 3 (black planar projection)
-		else if (ent->e.reType == RT_MODEL && (ent->e.renderfx & RF_SHADOW_PLANE) && r_shadows->integer == 3) {
-			onlyRenderShadows = qtrue;
 		} else {
 			return;
 		}

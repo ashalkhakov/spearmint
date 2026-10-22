@@ -463,7 +463,7 @@ void RB_BeginDrawingView (void) {
 	// clear relevant buffers
 	clearBits = GL_DEPTH_BUFFER_BIT;
 
-	if ( r_measureOverdraw->integer || r_shadows->integer == 2 )
+	if ( r_measureOverdraw->integer )
 	{
 		clearBits |= GL_STENCIL_BUFFER_BIT;
 	}
@@ -731,8 +731,6 @@ void RB_RenderDrawSurfList( drawSurf_t *drawSurfs, int numDrawSurfs ) {
 		}
 	}
 
-	// darken down any stencil shadows
-	RB_ShadowFinish();		
 
 	// add light flares on lights that aren't obscured
 	RB_RenderFlares();

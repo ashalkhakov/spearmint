@@ -1568,13 +1568,7 @@ void R_AddEntitySurfaces (void) {
 		// but may need to render shadow.
 		//
 		if ((ent->e.renderfx & RF_ONLY_MIRROR) && !tr.viewParms.isPortal) {
-			// ZTM: NOTE: cg_shadows 2 (stencil) doesn't work for first person models
-			//            so this only needs to handle cg_shadows 3 (black planar projection)
-			if (ent->e.reType == RT_MODEL && (ent->e.renderfx & RF_SHADOW_PLANE) && r_shadows->integer == 3) {
-				onlyRenderShadows = qtrue;
-			} else {
-				continue;
-			}
+			continue;
 		}
 
 		// simple generated models, like sprites and beams, are not culled

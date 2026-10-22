@@ -247,52 +247,6 @@ void RB_ShadowTessEnd( void ) {
 }
 
 
-/*
-=================
-RB_ShadowFinish
-
-Darken everything that is is a shadow volume.
-We have to delay this until everything has been shadowed,
-because otherwise shadows from different body parts would
-overlap and double darken.
-=================
-*/
-void RB_ShadowFinish( void ) {
-	// FIXME: implement this
-#if 0
-	if ( r_shadows->integer != 2 ) {
-		return;
-	}
-	if ( glConfig.stencilBits < 4 ) {
-		return;
-	}
-	qglEnable( GL_STENCIL_TEST );
-	qglStencilFunc( GL_NOTEQUAL, 0, 255 );
-
-	GL_Cull( CT_TWO_SIDED );
-
-	GL_BindToTMU( tr.whiteImage, TB_COLORMAP );
-
-    qglLoadIdentity ();
-
-	qglColor3f( 0.6f, 0.6f, 0.6f );
-	GL_State( GLS_DEPTHMASK_TRUE | GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ZERO );
-
-//	qglColor3f( 1, 0, 0 );
-//	GL_State( GLS_DEPTHMASK_TRUE | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO );
-
-	qglBegin( GL_QUADS );
-	qglVertex3f( -100, 100, -10 );
-	qglVertex3f( 100, 100, -10 );
-	qglVertex3f( 100, -100, -10 );
-	qglVertex3f( -100, -100, -10 );
-	qglEnd ();
-
-	qglColor4f(1,1,1,1);
-	qglDisable( GL_STENCIL_TEST );
-#endif
-}
-
 
 /*
 =================

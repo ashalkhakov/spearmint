@@ -226,9 +226,19 @@ static	void R_LoadLightmaps( const bspFile_t *bsp ) {
 		return;
 	}
 
-	// get number of external lightmaps
+	// get number of external lightmaps: the highest lm_NNNN there, in any
+	// image format (R_FindLightmap's image loading takes them all)
 	if (tr.worldDir) {
-		ri.FS_ListFiles(tr.worldDir, ".tga", &numExternalLightmaps);
+		char	**files;
+		int		numFiles, k;
+
+		files = ri.FS_ListFiles(tr.worldDir, "", &numFiles);
+		for (k = 0; k < numFiles; k++) {
+			if (!Q_stricmpn(files[k], "lm_", 3) && files[k][3] >= '0' && files[k][3] <= '9') {
+				numExternalLightmaps = MAX(numExternalLightmaps, atoi(files[k] + 3) + 1);
+			}
+		}
+		ri.FS_FreeFileList(files);
 	}
 
 	if ( !bsp->numLightmaps ) {

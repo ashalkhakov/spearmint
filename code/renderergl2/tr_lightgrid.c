@@ -104,6 +104,23 @@ static void LatticePointOf( const world_t *w, int index, vec3_t p ) {
 	p[2] = w->latticeOrigin[2] + z * LATTICE_SPACING;
 }
 
+/*
+================
+BakeAlloc
+
+the bake's scratch memory, which outgrows the zone on big maps (millions of
+voxels): the system's, a drop if there's none
+================
+*/
+static void *BakeAlloc( size_t size ) {
+	void *p = malloc( size );
+
+	if ( !p ) {
+		ri.Error( ERR_DROP, "bakeLightGrid: out of memory for %lu bytes", (unsigned long)size );
+	}
+	return p;
+}
+
 static int RoomRoot( int *parent, int i ) {
 	while ( parent[i] != i ) {
 		parent[i] = parent[parent[i]];
@@ -137,10 +154,10 @@ static void R_BuildRoomLattice( world_t *w ) {
 	step[1] = vb[0];
 	step[2] = vb[0] * vb[1];
 	n = vb[0] * vb[1] * vb[2];
-	edges = ri.Malloc( n );
-	depth = ri.Malloc( n );
-	queue = ri.Malloc( n * sizeof( int ) );
-	parent = ri.Malloc( n * sizeof( int ) );
+	edges = BakeAlloc( n );
+	depth = BakeAlloc( n );
+	queue = BakeAlloc( n * sizeof( int ) );
+	parent = BakeAlloc( n * sizeof( int ) );
 
 	// the voxels in the open, and which neighbours each reaches
 	for ( i = 0, z = 0; z < vb[2]; z++ ) {
@@ -219,7 +236,7 @@ static void R_BuildRoomLattice( world_t *w ) {
 	for ( i = 0; i < n; i++ ) {
 		parent[i] = -1;
 	}
-	peak = ri.Malloc( n * sizeof( int ) );		// a basin's deepest, at its root
+	peak = BakeAlloc( n * sizeof( int ) );		// a basin's deepest, at its root
 	for ( j = tail - 1; j >= 0; j-- ) {
 		int c = queue[j], ni, d = depth[c];
 
@@ -282,9 +299,9 @@ static void R_BuildRoomLattice( world_t *w ) {
 	// size, three ints, then a short a voxel, -1 solid)
 	if ( ri.Cvar_VariableIntegerValue( "developer" ) ) {
 		int		size = 12 + n * 2;
-		byte	*buf = ri.Malloc( size );
+		byte	*buf = BakeAlloc( size );
 		short	*out = (short *)( buf + 12 );
-		int		*sizes = ri.Malloc( MAX( 1, numRooms ) * sizeof( int ) );
+		int		*sizes = BakeAlloc( MAX( 1, numRooms ) * sizeof( int ) );
 		int		big = 0, best = 0;
 		char	name[MAX_QPATH];
 
@@ -305,15 +322,15 @@ static void R_BuildRoomLattice( world_t *w ) {
 		}
 		ri.Printf( PRINT_ALL, "%d rooms in %dx%dx%d voxels, %d of 64 voxels or more, the biggest %d, the deepest %d, %d ms\n",
 			numRooms, vb[0], vb[1], vb[2], big, best, maxDepth, ri.Milliseconds() - start );
-		ri.Free( sizes );
-		ri.Free( buf );
+		free( sizes );
+		free( buf );
 	}
 
-	ri.Free( peak );
-	ri.Free( parent );
-	ri.Free( queue );
-	ri.Free( depth );
-	ri.Free( edges );
+	free( peak );
+	free( parent );
+	free( queue );
+	free( depth );
+	free( edges );
 }
 
 /*
@@ -582,7 +599,7 @@ void R_BakeLightGrid_f( void ) {
 		w->latticeLight = ri.Hunk_Alloc( n * 8, h_low );
 	}
 	Com_Memset( w->latticeLight, 0, n * 8 );
-	open = ri.Malloc( n * sizeof( int ) );
+	open = BakeAlloc( n * sizeof( int ) );
 	for ( i = 0, numOpen = 0; i < n; i++ ) {
 		if ( w->latticeRoom[i] >= 0 ) {
 			open[numOpen++] = i;
@@ -598,7 +615,7 @@ void R_BakeLightGrid_f( void ) {
 	r_portalVis->integer = 0;
 	r_fogLights->integer = 0;
 
-	pixels = ri.Malloc( tr.lightGridBakeFbo->width * tr.lightGridBakeFbo->height * 4 * sizeof( float ) );
+	pixels = BakeAlloc( tr.lightGridBakeFbo->width * tr.lightGridBakeFbo->height * 4 * sizeof( float ) );
 	for ( i = 0; i < numOpen; i += LIGHTGRID_BAKE_BATCH ) {
 		refdef_t	fd;
 		int			batch = MIN( LIGHTGRID_BAKE_BATCH, numOpen - i );
@@ -648,14 +665,14 @@ void R_BakeLightGrid_f( void ) {
 			ri.Printf( PRINT_ALL, "bakeLightGrid: %d of %d\n", i + batch, numOpen );
 		}
 	}
-	ri.Free( pixels );
+	free( pixels );
 	r_lightmap->integer = savedLightmap;
 	r_portalVis->integer = savedPortalVis;
 	r_fogLights->integer = savedFogLights;
 
 	// saved
 	size = 36 + n * 2 + numOpen * 8;
-	buf = ri.Malloc( size );
+	buf = BakeAlloc( size );
 	( (int *)buf )[0] = LittleLong( LIGHTGRID_IDENT );
 	( (int *)buf )[1] = LittleLong( LIGHTGRID_VERSION );
 	for ( i = 0; i < 3; i++ ) {
@@ -672,7 +689,7 @@ void R_BakeLightGrid_f( void ) {
 	}
 	Com_sprintf( name, sizeof( name ), "maps/%s.lightgrid", w->baseName );
 	ri.FS_WriteFile( name, buf, size );
-	ri.Free( buf );
-	ri.Free( open );
+	free( buf );
+	free( open );
 	ri.Printf( PRINT_ALL, "bakeLightGrid: %s, %d points in %.1f s\n", name, numOpen, ( ri.Milliseconds() - start ) / 1000.0f );
 }

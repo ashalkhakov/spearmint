@@ -389,8 +389,6 @@ Cvars that have broken bits:
 
 *  `r_pshadowDist`                  - Virtual camera distance when creating shadowmaps for projected shadows.  Deprecated.
 
-*  `cg_shadows`                     - Old shadow code.  Deprecated.
-
 
 -------------------------------------------------------------------------------
   MATERIALS
@@ -563,6 +561,16 @@ It is then drawn as Doom 3 draws fog lights, not as a Quake 3 fog volume:
   in it, dark shafts behind what blocks them.
 
 Daikatana's fog volumes are converted to these.
+
+
+-------------------------------------------------------------------------------
+  EXTERNAL LIGHTMAPS
+-------------------------------------------------------------------------------
+
+A map's lightmaps can be files beside it, maps/<map>/lm_NNNN, as q3map2
+-external writes them, for surfaces whose lightmap number is past the BSP's
+own. They can be in any image format the renderer loads (lm_0000.png for
+lm_0000.tga): the highest lm_NNNN there counts them.
 
 
 -------------------------------------------------------------------------------

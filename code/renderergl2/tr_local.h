@@ -2066,7 +2066,6 @@ extern	cvar_t	*r_shownormals;					// draws wireframe normals
 extern  cvar_t	*r_bonesDebug;					// draws MDS bones
 extern	cvar_t	*r_clear;						// force screen clear every frame
 
-extern	cvar_t	*r_shadows;						// controls shadows: 0 = none, 1 = blur, 2 = stencil, 3 = black planar projection
 extern	cvar_t	*r_flares;						// light flares
 
 extern	cvar_t	*r_intensity;
@@ -2552,7 +2551,6 @@ SHADOWS
 */
 
 void RB_ShadowTessEnd( void );
-void RB_ShadowFinish( void );
 void RB_ProjectionShadowDeform( void );
 
 /*

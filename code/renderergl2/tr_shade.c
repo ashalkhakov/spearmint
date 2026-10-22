@@ -2166,13 +2166,6 @@ void RB_StageIteratorGeneric( void )
 	//
 	RB_IterateStagesGeneric( input );
 
-	//
-	// pshadows!
-	//
-	if (glRefConfig.framebufferObject && r_shadows->integer == 4 && tess.pshadowBits
-		&& tess.shader->sort <= SS_OPAQUE && !(tess.shader->surfaceParms & (SURF_NODLIGHT | SURF_SKY) ) ) {
-		ProjectPshadowVBOGLSL();
-	}
 
 
 	// 
