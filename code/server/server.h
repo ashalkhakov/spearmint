@@ -100,13 +100,19 @@ typedef struct {
 
 	int				restartTime;
 	int				time;
+
+	// the game's own state for the snapshot being written (GAME_WRITE_SNAPSHOT)
+	struct clientSnapshot_s	*snapshotStateFrame;	// its entities, while the game writes
+	int				snapshotStateClient;
+	int				snapshotStateSize;
+	byte			snapshotState[MAX_SNAPSHOT_STATE];
 } server_t;
 
 
 
 
 
-typedef struct {
+typedef struct clientSnapshot_s {
 	int				areabytes[MAX_SPLITVIEW];
 	byte			areabits[MAX_SPLITVIEW][MAX_MAP_AREA_BYTES];		// portalarea visibility bits
 	int				numPSs;
@@ -413,6 +419,8 @@ void SV_Heartbeat_f( void );
 // sv_snapshot.c
 //
 sharedEntityState_t *SV_SnapshotEntity( int num );
+int SV_GetSnapshotEntities( int clientNum, int *entityNums, int maxEntities );
+void SV_SetSnapshotState( const void *data, int size );
 void SV_AddServerCommand( client_t *client, int localPlayerNum, const char *cmd );
 void SV_UpdateServerCommandsToClient( client_t *client, msg_t *msg );
 void SV_WriteFrameToClient (client_t *client, msg_t *msg);

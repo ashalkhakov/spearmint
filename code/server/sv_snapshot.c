@@ -143,6 +143,66 @@ static void SV_EmitPacketEntities( clientSnapshot_t *from, clientSnapshot_t *to,
 	MSG_WriteBits( msg, (MAX_GENTITIES-1), GENTITYNUM_BITS );	// end of packetentities
 }
 
+/*
+=============
+SV_EmitSnapshotState
+
+The game's own state for the snapshot (Doom 3's ServerWriteSnapshot): its
+entities write themselves, delta coded against what the game wrote for the
+snapshot the client last acknowledged (baseSequence, -1 if none)
+=============
+*/
+static void SV_EmitSnapshotState( client_t *client, clientSnapshot_t *frame, int sequence, int baseSequence, msg_t *msg ) {
+	sv.snapshotStateFrame = frame;
+	sv.snapshotStateClient = client - svs.clients;
+	sv.snapshotStateSize = 0;
+	if ( gvm ) {
+		VM_Call( gvm, GAME_WRITE_SNAPSHOT, sv.snapshotStateClient, sequence, baseSequence );
+	}
+	sv.snapshotStateFrame = NULL;
+
+	MSG_WriteShort( msg, sv.snapshotStateSize );
+	MSG_WriteData( msg, sv.snapshotState, sv.snapshotStateSize );
+}
+
+/*
+=============
+SV_GetSnapshotEntities
+
+G_GET_SNAPSHOT_ENTITIES: the entity numbers of the snapshot being written
+=============
+*/
+int SV_GetSnapshotEntities( int clientNum, int *entityNums, int maxEntities ) {
+	clientSnapshot_t *frame = sv.snapshotStateFrame;
+	int i;
+
+	if ( !frame || clientNum != sv.snapshotStateClient ) {
+		return 0;
+	}
+	for ( i = 0; i < frame->num_entities && i < maxEntities; i++ ) {
+		entityNums[i] = SV_SnapshotEntity( frame->first_entity + i )->number;
+	}
+	return i;
+}
+
+/*
+=============
+SV_SetSnapshotState
+
+G_SET_SNAPSHOT_STATE: the game's bytes for the snapshot being written
+=============
+*/
+void SV_SetSnapshotState( const void *data, int size ) {
+	if ( !sv.snapshotStateFrame ) {
+		return;
+	}
+	if ( size < 0 || size > MAX_SNAPSHOT_STATE ) {
+		Com_Error( ERR_DROP, "SV_SetSnapshotState: size %d", size );
+	}
+	Com_Memcpy( sv.snapshotState, data, size );
+	sv.snapshotStateSize = size;
+}
+
 
 
 /*
@@ -254,6 +314,9 @@ static void SV_WriteSnapshotToClient( client_t *client, msg_t *msg ) {
 
 	// delta encode the entities
 	SV_EmitPacketEntities (oldframe, frame, msg);
+
+	// and the game's own state, delta coded from the same snapshot
+	SV_EmitSnapshotState( client, frame, client->netchan.outgoingSequence, oldframe ? client->deltaMessage : -1, msg );
 
 	// padding for rate debugging
 	if ( sv_padPackets->integer ) {

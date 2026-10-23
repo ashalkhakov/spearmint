@@ -80,6 +80,9 @@ typedef struct {
 
 	int				serverCommandNum;		// execute all commands up to this before
 											// making the snapshot current
+
+	int				stateSize;				// the game's own state (Doom 3's snapshot):
+	byte			state[MAX_SNAPSHOT_STATE];	// cgame reads it, delta coded from deltaNum's
 } clSnapshot_t;
 
 
@@ -113,6 +116,7 @@ typedef struct {
 									// to disconnect, preventing debugging breaks from
 									// causing immediate disconnects on continue
 	clSnapshot_t	snap;			// latest received from server
+	qboolean		requestFullSnapshot;	// cgame lost the base of the game's state: no delta till one comes
 
 	int			serverTime;			// may be paused during play
 	int			oldServerTime;		// to prevent time from flowing bakcwards

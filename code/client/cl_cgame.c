@@ -392,6 +392,32 @@ CL_GetServerCommand
 Set up argc/argv for the given command
 ===================
 */
+/*
+====================
+CL_GetSnapshotState
+
+CG_GETSNAPSHOTSTATE: the game's own state in the snapshot (Doom 3's), its
+size, -1 if the snapshot is gone; the snapshot it was delta coded from
+====================
+*/
+int CL_GetSnapshotState( int snapshotNumber, void *data, int maxSize, int *baseNumber ) {
+	clSnapshot_t *clSnap;
+
+	if ( snapshotNumber > cl.snap.messageNum || cl.snap.messageNum - snapshotNumber >= PACKET_BACKUP ) {
+		return -1;
+	}
+	clSnap = &cl.snapshots[snapshotNumber & PACKET_MASK];
+	if ( !clSnap->valid || clSnap->messageNum != snapshotNumber ) {
+		return -1;
+	}
+	if ( clSnap->stateSize > maxSize ) {
+		Com_Error( ERR_DROP, "CL_GetSnapshotState: %d bytes, cgame takes %d", clSnap->stateSize, maxSize );
+	}
+	Com_Memcpy( data, clSnap->state, clSnap->stateSize );
+	*baseNumber = clSnap->deltaNum;
+	return clSnap->stateSize;
+}
+
 qboolean CL_GetServerCommand( int serverCommandNumber ) {
 	char	*s;
 	char	*cmd;
@@ -1595,6 +1621,11 @@ intptr_t CL_CgameSystemCalls( intptr_t *args ) {
 		return 0;
 	case CG_GETCURRENTSNAPSHOTNUMBER:
 		CL_GetCurrentSnapshotNumber( VMA(1), VMA(2) );
+		return 0;
+	case CG_GETSNAPSHOTSTATE:
+		return CL_GetSnapshotState( args[1], VMA(2), args[3], VMA(4) );
+	case CG_REQUESTFULLSNAPSHOT:
+		cl.requestFullSnapshot = qtrue;
 		return 0;
 	case CG_GETSNAPSHOT:
 		return CL_GetSnapshot( args[1], VMA(2), args[3], VMA(4), VMA(5), args[6] );

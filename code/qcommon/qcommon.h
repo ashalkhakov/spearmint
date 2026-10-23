@@ -262,6 +262,10 @@ void		NET_LeaveMulticast6(void);
 void		NET_Sleep(int msec);
 
 
+// the game's own state in a snapshot, as Doom 3's: its entities' WriteToSnapshot
+// (GAME_WRITE_SNAPSHOT), read by cgame (CG_GETSNAPSHOTSTATE)
+#define	MAX_SNAPSHOT_STATE		8192
+
 #define	MAX_MSGLEN				32768		// max length of a message, which may
 											// be fragmented into multiple packets
 
@@ -325,7 +329,7 @@ PROTOCOL
 ==============================================================
 */
 
-#define	PROTOCOL_VERSION	12
+#define	PROTOCOL_VERSION	13
 #define PROTOCOL_LEGACY_VERSION	0
 
 // maintain a list of compatible protocols for demo playing

@@ -368,6 +368,17 @@ void CL_ParseSnapshot( msg_t *msg ) {
 	SHOWNET( msg, "packet entities" );
 	CL_ParsePacketEntities( msg, old, &newSnap );
 
+	// the game's own state (Doom 3's snapshot), for cgame to read
+	SHOWNET( msg, "snapshot state" );
+	newSnap.stateSize = MSG_ReadShort( msg );
+	if ( newSnap.stateSize < 0 || newSnap.stateSize > MAX_SNAPSHOT_STATE ) {
+		Com_Error( ERR_DROP, "CL_ParseSnapshot: snapshot state of %d bytes", newSnap.stateSize );
+	}
+	MSG_ReadData( msg, newSnap.state, newSnap.stateSize );
+	if ( newSnap.deltaNum <= 0 ) {
+		cl.requestFullSnapshot = qfalse;	// a full one
+	}
+
 	// if not valid, dump the entire thing now that it has
 	// been properly read
 	if ( !newSnap.valid ) {

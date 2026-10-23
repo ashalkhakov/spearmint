@@ -612,6 +612,13 @@ intptr_t SV_GameSystemCalls( intptr_t *args ) {
 		Com_DebugPolygon( VMA(1), VMA(2), args[3], args[4] );
 		return 0;
 
+	case G_GET_SNAPSHOT_ENTITIES:
+		return SV_GetSnapshotEntities( args[1], VMA(2), args[3] );
+
+	case G_SET_SNAPSHOT_STATE:
+		SV_SetSnapshotState( VMA(1), args[2] );
+		return 0;
+
 	default:
 		Com_Error( ERR_DROP, "Bad game system trap: %ld", (long int) args[0] );
 	}
