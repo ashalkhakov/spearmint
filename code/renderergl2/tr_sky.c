@@ -895,6 +895,12 @@ void RB_StageIteratorSky( void ) {
 	// to be drawn
 	RB_ClipSkyPolygons( &tess );
 
+	// the sky's polygons are done with (the clouds are built anew too): the
+	// box's sides fit however many showed (seen from outside the world, or
+	// stuck in it, enough to have overflowed them)
+	tess.numVertexes = 0;
+	tess.numIndexes = 0;
+
 	// r_showsky will let all the sky blocks be drawn in
 	// front of everything to allow developers to see how
 	// much sky is getting sucked in
